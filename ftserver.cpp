@@ -1,8 +1,9 @@
 /******************************************************
-# 	CS 372 - Winter 2016 - Program 1
+# 	CS 372 - Winter 2016 - Program 2
 #   By: Carol Toro
-#   Date: 2/2/2016
-#   Filename: chatserve.cpp
+#   File Created: 2/16/2016
+#   Last Modified: 2/17/2016
+#   Filename: ftserver.cpp
 #   Description: This program is the server side of a chat client.
 #	A TCP socket is created to listen for incoming connections from
 #	clients. When a connection is accepted, the chat server gets
@@ -12,46 +13,80 @@
 #	client quits, the server goes back to listening for new connections.
 #	Server will continue to listen until a SIGINT is received to end the program.
 #   References:
+#		Beej's Guide
+#		UNIX: List a Directory
 #	   API: Linux socket Programming In C++ from TLDP
 #	   http ://tldp.org/LDP/LG/issue74/tougher.html
 #	   List a Directory 
 #		http://www.gnu.org/software/libc/manual/html_node/Simple-Directory-Lister.html#Simple-Directory-Lister
 ******************************************************/
 
-#include "ServerSocket.h"
-#include "SocketException.h"
+#include <cstring>
+#include <cstdlib>
+#include <dirent.h>
+#include <fstream>
+#include <iostream>
+#include <netdb.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string>
-#include <string.h>
-#include <cstdlib>
-#include <iostream>
+#include <sys/socket.h>
 #include <sys/types.h>
-#include <dirent.h>
+#include <unistd.h>
 #include <vector>
+
 using namespace std;
 //#define DEBUG 0
-#define MAX_PACKET 1024
+#define MAX_PACKET 1000
+#define MAX_COMMANDS 5
+
+const int NUM_SIZE=10;
+/*Global variables*/
 char buffer[MAX_PACKET];
 
-/*Global variables*/
+typedef session session;
+
+struct session{
+	char *msgBuffer;
+	string message;
+	int msgLength;
+	char **commands;
+	int numCommands;
+	char *fileName;
+	int dataPort;
+	struct sockaddr_in clientAddr;
+};
+
+
+session* createSession();
 /*function prototypes*/
-void intro();
-void printDirections();
+
+/*Socket & Connection Prototypes */
+void startServer(int &serverSocket, int ftPort);
+void startNewConnection(int &controlSocket, int serverSocket);
+void setupDataConnection(int &dataSocket, struct session *thisSession);
+bool handleRequest(int controlSocket, int serverSocket, struct session *thisSession);
+
+/*Socket helper functions*/
 void listening(int port);
-string getHandle();
-void print(const string &s);
-string getReply(const string &h);
-string appendHandle(const string &h, const string &s);
+void intro();
+
+
 void sigHandler(int n);
-void acceptConnection(ServerSocket &s, ServerSocket &n);
-string getMessage(ServerSocket &sock);
-void sendReply(const string &m, ServerSocket &sock);
+void clientConnected(string name);
+/*Request connections*/
 
-void dataConnection(ServerSocket &server, ServerSocket &newSock);
-void getDirectory(string dir, vector<string> &list);
-void sendDirectory(ServerSocket &dataSock);
+/*File Transfer helper functions*/
+string getDirectoryContents();
 
+void sendDirectory(int controlSocket, int dataSocket, struct session *thisSession);
+void sendFile(int controlSocket, int dataSocket, struct session *thisSession);
+void sendAll(int socketFD, struct session *thisSession);
+void receiveAll(int socketFD, struct session *thisSession);
+
+void readSocket(int socketFD, struct session *thisSession);
+void socketSend();
+void parseMessage(int socketFD, struct session *thisSession);
 void sendFile(ServerSocket &dataSock);
 
 int main(int argc, char *argv[])
@@ -64,80 +99,126 @@ int main(int argc, char *argv[])
 		exit(1);
 
 	}
+
+	struct session *curSession=createSession();
+
+	/*Socket File descriptors*/
+	int serverSocket;
+	int controlSocket;
+	
+
+	char hostName[1024], service[20];
+	addr_size = sizeof(client_addr);
+	
 	/*Store port #*/
 	int portNumber = atoi(argv[1]);
 
-	/*Get user's handle*/
-	string handle = getHandle();
+	
+	/*Setup server & listen for connections*/
+	startServer(serverSocket, portNumber);
 
-	string quit = "\\quit";
-
-	/*Handle interrupt signal*/
-	signal(SIGINT, sigHandler);
-
-	//signal(SIGKILL, sigHandler);
-
-	try
+	
+	while (true)
 	{
-		/*Create Socket*/
-		ServerSocket server(portNumber);
-		
+		/*Start control connection*/
+		startNewConnection(controlSocket, serverSocket);
+
 
 		while (true)
 		{
-			/*Wait for connection*/
-			listening(portNumber);
-
-			/*Create new socket for client*/
-			ServerSocket newSock;
-
-			/*Accept client request*/
-			acceptConnection(server, newSock);
-
-			/*Fork new process*/
-			dataConnection(server, newSock);
-
-			try
-			{
-				while (true)
-				{
-					/*Get incoming message*/
-					string data = getMessage(newSock);
-
-					/*Print incoming message*/
-					print(data);
-
-					/*Get outgoing reply*/
-					string message = getReply(handle);
-
-					/*Close the current connection*/
-					if (message == quit)
-					{
-						break;
-					}
-
-					/*Edit outgoing reply*/
-					string toSend = appendHandle(handle, message);
-
-					/*Send outgoing reply*/
-					sendReply(toSend, newSock);
-				}
-			}
-			catch (SocketException&) {}
+			/*Handle client requests*/
+			handleRequest(controlSocket, serverSocket);
+			/*Read message*/
+			
 		}
-
 	}
-	catch (SocketException& e)
 
-	{
-		cout << "Exception was caught:" << e.description() << "\nExiting.\n";
-	}
+	
+	
 
 	return 0;
 }
+
+session* createSession(){
+
+	/*Allocate memory for the session variables*/
+
+	session *theSession = malloc(sizeof(session));
+	theSession->msgLength=0;
+	theSession->msgBuffer=malloc(sizeof(char)* MAX_PACKET);
+	theSession->commands=(char**)malloc(MAX_COMMANDS * sizeof(char*));
+
+	/*Allocate memory for array of strings*/
+	for(int i=0; i < MAX_COMMANDS; i++){
+		theSession->commands[i]=(char*)malloc(20 * sizeof(char));
+	}
+}
+/******************************************************
+#   startServer
+#   @desc: 	
+#   @param: n/a
+#   @return: 
+******************************************************/
 void intro()
 {
 	cout << "Welcome to ftserver! \n\n" << endl;
+}
+
+/******************************************************
+#   startServer
+#   @desc: 	
+#   @param: n/a
+#   @return: 
+******************************************************/
+void startServer(int &serverSocket, int ftPort)
+{
+	/*Create server socket*/
+	serverSocket=socket(AF_INET, SOCK_STREAM, 0);
+
+	struct sockaddr_in server;
+
+	/*Setup server socket*/
+	server.sin_family = AF_INET;
+
+	server.sin_port=htons(ftPort);
+	server.sin_addr.s_addr=INADDR_ANY;
+
+	/*Bind server socket*/
+	bind(serverSocket, (struct sockaddr *) &server, sizeof(server));
+
+	/*Listen for incoming connections*/
+	listen(serverSocket, 1);
+
+	/*Print to console*/
+	listening(ftPort);
+}
+
+void startNewConnection(int &controlSocket, int serverSocket)
+{
+	int newSocketFD;
+	struct sockaddr_in client;
+	socklen_t clientLength=sizeof(client);
+	char clientName[1024];
+	char service[20];
+
+	controlSocket=accept(serverSocket, (struct sockaddr*), &client,&clientLength);
+
+	/*Ensure connection worked*/
+	if(controlSocket<0){
+		cout << "Error: unable to accept connection." << endl;
+	}
+	else{
+
+		/*get name of client*/
+		getnameinfo((struct sockaddr *)&client, sizeof(client),clientName,sizeof(clientName), service, sizeof(service),0);
+
+		cout << "Connection from " << clientName << endl;
+	}
+
+	/*get message from connected client*/
+
+
+
 }
 /******************************************************
 #   Helper function used to print to console that
@@ -147,52 +228,7 @@ void listening(int port)
 {
 	cout << "Port #" << port << ": ftserver is now listing for incoming connections.\n" << endl;
 }
-/******************************************************
-#   Helper function used to print to console the
-#   program instructions
-******************************************************/
-void printDirections()
-{
-	cout << "Connection with chatclient established.\n";
-	cout << "Use \\quit command to end connection.\n" << endl;
-}
-/******************************************************
-#   Helper function used to get a less than 11 char
-#   user handle
-******************************************************/
-string getHandle()
-{
-	string h;
-	cout << "Input a 10 character chatserve handle: ";
-	getline(cin, h);
 
-	while (h.length() > 10)
-	{
-		cout << "Handle too long, Try again: ";
-		getline(cin, h);
-	}
-	cout << endl << endl;
-
-	return h;
-}
-/******************************************************
-#   Helper function used to print the incoming
-#   message from the connected client
-#
-******************************************************/
-void print(const string &s)
-{
-	cout << s << endl;
-}
-/******************************************************
-#   Helper function used to append the handle to
-#   the outgoing reply message
-#
-******************************************************/
-string appendHandle(const string &h, const string &s)
-{
-	return h + string("> ") + s;
-}
 
 /******************************************************
 #   Function to handle the signal interruptions
@@ -204,98 +240,61 @@ void sigHandler(int n)
 	exit(n);
 }
 
-/******************************************************
-#   Helper function used to get outgoing reply from
-#   user and ensure reply does not exceed 500 chars
-#
-******************************************************/
-string getReply(const string &h)
-{
-	string str;
-	str.append(h);
-	str.append("> ");
 
-	string thisMessage;
-	/*Print to the console so user types in message*/
-	cout << str;
-	getline(cin, thisMessage);
-	/*Repeat if message is over 500 chars*/
-	while (thisMessage.length() > 500)
-	{
-		cout << "Message too long: ";
-		getline(cin, thisMessage);
-	}
-
-	return thisMessage;
-}
 
 
 /******************************************************
-#   Helper function to accept the incoming connection
-#
-#
+#   getDirectoryContents
+#   @desc: open directory, and append file names to 
+#		to string
+#   @param: n/a
+#   @return: string containing dir contents
 ******************************************************/
-void acceptConnection(ServerSocket &s, ServerSocket &n)
-{
-	s.accept(n);
-}
-
-/******************************************************
-#   Helper function to get the incoming message
-#   from the connected client
-#
-******************************************************/
-string getMessage(ServerSocket &sock)
-{
-	string str;
-	sock >> str;
-	return str;
-}
-/******************************************************
-#   Helper function to send the outgoing reply
-#   to the connected client
-#
-******************************************************/
-void sendReply(const string &m, ServerSocket &sock)
-{
-	sock << m;
-}
-
-
-void getDirectory(string dir, vector<string> &list)
-{
+string getDirectoryContents()
+{	
+	/*directory pointer*/
 	DIR *dirPointer;
 	struct dirent *ep;
+	/*Variable to contain contents of directory*/
+	string dirContents="";
 
 	/*Open directory*/
-	dirPointer=opendir(dir);
+	dirPointer=opendir(".");
 
-	if(dirPointer!= NULL)
-	{
-		while(ep=readdir(dirPointer)){
-			list.push_back(string(ep->d_name));
-		}
-		closedir(dirPointer);
+	/*Ensure open worked*/
+	if(dirPointer == NULL){
+		cout << "Unable to open folder to read file" << endl;
+		exit(1);
 	}
-	else{
-		perror("Couldn't open the directory");
+
+	/*Loop thru files in directory*/
+	while(ep=readdir(dirPointer)){
+
+		/*Append file name string*/
+		dirContents+=ep->d_name;
+		/*Append new line*/
+		dirContents+="\n";
+
 	}
+
+	/*Close directory*/
+	closedir(dirPointer);
+
+	/*Return string containing dir contents*/
+	return dirContents;
+	
 }
 void sendDirectory(ServerSocket &dataSock)
 {
-	string dir = string("./");
+	string contents = getDirectoryContents();
 
-	/*vector of files in directory*/
-	vector<string> fileList=vector<string>();
-
-	getDirectory(dir, fileList);
-
+	/*Send string to client*/
 
 
 
 }
 
-void dataConnection(ServerSocket &server, ServerSocket &newSock)
+void setupDataConnection(int &dataSocket, struct session *thisSession)
 {
 	/*Get name of host name and service*/
 	/*Start a new process*/
@@ -313,4 +312,81 @@ void dataConnection(ServerSocket &server, ServerSocket &newSock)
 		close(server);
 
 	}
+}
+
+bool handleRequest(int controlSocket, int serverSocket, struct session *thisSession)
+{
+	/*Get commands from connection*/
+	receiveAll(controlSocket, thisSession);
+
+	/*Parse message received into commands*/
+	parseMessage(thisSession);
+
+
+	/*Identify commands received*/	
+
+}
+/******************************************************
+#   startServer
+#   @desc: 	
+#   @param: n/a
+#   @return: 
+******************************************************/
+void receiveAll(int socketFD, struct session *thisSession){
+
+	/*Clear the buffer*/
+	bzero(thisSession->msgBuffer, MAX_PACKET);
+	/*Variable to keep track of bytes read*/
+	int bytesRead=0;
+
+	if((bytesRead=recv(socketFD, thisSession->msgBuffer, MAX_PACKET-1,0)==-1){
+		/*Error*/
+		exit(1);
+	}
+
+	/*Make received mesage null terminated*/
+	thisSession->msgBuffer[bytesRead]=0;
+
+}
+
+/******************************************************
+#   parseMessage
+#   @desc: parse the command stored in  user's userInput into
+#       individual arguments stored in user's arguments
+#   @param: pointer to user object
+#   @return: void
+******************************************************/
+/*Repurposed this function from a CS344 function */
+void parseMessage(int socketFD, struct session *thisSession)
+{
+	char *buf=thisSession->msgBuffer;
+	char **comms=thisSession->commands;
+	int num=0;
+
+	while((*buf != '\0')) {
+
+		/*Strip the whitespace*/
+		while ((*buf == ' ') || (*buf == '\n')) {
+            *buf++ = '\0';
+        }
+
+        /*Save the command.*/
+        *comms++ = buf;
+
+       /*Skip over valid commands*/
+        while ((*buf != '\0') && (*buf != ' ') && (*buf != '\n')) {
+            buf++;
+        }
+
+
+        num++;
+    }
+
+    num--;
+    thisSession->numCommands=num;
+    *comms--;
+    *comms=0;/*Make it null terminated*/
+
+
+
 }
