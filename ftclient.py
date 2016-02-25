@@ -60,8 +60,13 @@ def commandType(command):
 
     if command[1]=="l":
         print("Requesting list\n")
-    elif command[1]=="g":
+        return 2
+    
+    if command[1]=="g":
         print("Getting file")
+        return 1
+    #wrong command 
+    return -1 
 
 
 #------------------------------------------------------------
@@ -118,7 +123,7 @@ def main():
         filename=str(sys.argv[4]);
     
     # DEBUG: Figure out command type
-    commandType(command)
+    cType=commandType(command)
 
     # Create control connection to server SOCK_STREAM
     clientSocket = createSocket()
