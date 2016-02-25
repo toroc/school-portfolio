@@ -294,3 +294,23 @@ void sendDirectory(ServerSocket &dataSock)
 
 
 }
+
+void dataConnection(ServerSocket &server, ServerSocket &newSock)
+{
+	/*Get name of host name and service*/
+	/*Start a new process*/
+
+	childPID=fork();
+
+	if (childPID<0){
+		/*Error*/
+	}
+
+	if(childPID==0)
+	{
+		cout << "Connection from client"<< endl;
+
+		close(server);
+
+	}
+}
