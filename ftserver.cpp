@@ -40,10 +40,9 @@ using namespace std;
 #define MAX_PACKET 1000
 #define MAX_COMMANDS 5
 
-const int NUM_SIZE=10;
-/*Global variables*/
-char buffer[MAX_PACKET];
 
+
+/*Session Data Structure*/
 typedef session session;
 
 struct session{
@@ -52,15 +51,17 @@ struct session{
 	int msgLength;
 	char **commands;
 	int numCommands;
+	int commValid; /*0=false, 1=true*/
 	char *fileName;
 	int dataPort;
 	struct sockaddr_in clientAddr;
 };
 
-
 session* createSession();
+void freeSession(struct session *thisSession);
 
-void indentifyCommands(struct session *thisSession);
+
+
 /*function prototypes*/
 
 /*Socket & Connection Prototypes */
@@ -68,17 +69,21 @@ void startServer(int &serverSocket, int ftPort);
 void startNewConnection(int &controlSocket, int serverSocket, struct sockaddr_in &client, socklen_t &clientLength);
 void setupDataConnection(int controlSocket, int &dataSocket, struct session *thisSession);
 bool handleRequest(int controlSocket, int serverSocket, struct session *thisSession);
+
 /*Socket helper functions*/
 void listening(int port);
 void intro();
 void saveClientAddr(struct session *thisSession, struct sockaddr_in client);
 
 void sigHandler(int n);
-void clientConnected(string name);
 /*Request connections*/
 
 /*File Transfer helper functions*/
+void parseMessage(int socketFD, struct session *thisSession);
+void indentifyCommands(struct session *thisSession);
 string getDirectoryContents();
+
+
 
 void sendDirectory(int controlSocket, int dataSocket, struct session *thisSession);
 void sendFile(int controlSocket, int dataSocket, struct session *thisSession);
@@ -87,7 +92,7 @@ void receiveAll(int socketFD, struct session *thisSession);
 
 void readSocket(int socketFD, struct session *thisSession);
 void socketSend();
-void parseMessage(int socketFD, struct session *thisSession);
+
 void sendFile(ServerSocket &dataSock);
 
 int main(int argc, char *argv[])
@@ -139,11 +144,20 @@ int main(int argc, char *argv[])
 	}
 
 	
-	
+	freeSession(curSession);
 
 	return 0;
 }
-
+/******************************************************
+#   Session Data Structure Functions
+******************************************************/
+/******************************************************
+#   createSession
+#   @desc: allocate memory for  data structure
+#       and return pointer to session object
+#   @param: n/a
+#   @return: struct session *theSession
+******************************************************/
 session* createSession(){
 
 	/*Allocate memory for the session variables*/
@@ -157,11 +171,25 @@ session* createSession(){
 	for(int i=0; i < MAX_COMMANDS; i++){
 		theSession->commands[i]=(char*)malloc(20 * sizeof(char));
 	}
+
+	return theSession;
+}
+
+/******************************************************
+#   freeUser
+#   @desc: Deallocate the memory used up by user
+#   @param: pointer to user object
+#   @return: void
+******************************************************/
+void freeSession(struct session *thisSession)
+{
+	free(thisSession);
+
 }
 /******************************************************
-#   startServer
+#   funcName
 #   @desc: 	
-#   @param: n/a
+#   @param: 
 #   @return: 
 ******************************************************/
 void intro()
@@ -197,13 +225,19 @@ void startServer(int &serverSocket, int ftPort)
 	/*Print to console*/
 	listening(ftPort);
 }
-
+/******************************************************
+#   funcName
+#   @desc: 	
+#   @param: 
+#   @return: 
+******************************************************/
 void startNewConnection(int &controlSocket, int serverSocket, struct sockaddr_in &client, socklen_t &clientLength)
 {
 	int newSocketFD;
 	char clientName[1024];
 	char service[20];
 
+	/*Accept incoming  control connection*/
 	controlSocket=accept(serverSocket, (struct sockaddr*) &client,&clientLength);
 
 	/*Ensure connection worked*/
@@ -217,10 +251,6 @@ void startNewConnection(int &controlSocket, int serverSocket, struct sockaddr_in
 
 		cout << "Connection from " << clientName << endl;
 	}
-
-	/*get message from connected client*/
-
-
 
 }
 /******************************************************
@@ -243,7 +273,12 @@ void sigHandler(int n)
 	exit(n);
 }
 
-
+/******************************************************
+#   funcName
+#   @desc: 	
+#   @param: 
+#   @return: 
+******************************************************/
 void saveClientAddr(struct session *thisSession, struct sockaddr_in client)
 {
 	thisSession->clientAddr=client;
@@ -291,6 +326,12 @@ string getDirectoryContents()
 	return dirContents;
 	
 }
+/******************************************************
+#   funcName
+#   @desc: 	
+#   @param: 
+#   @return: 
+******************************************************/
 void sendDirectory(int controlSocket, int dataSocket, struct session *thisSession)
 {
 	int bytesSent=0;
@@ -307,11 +348,22 @@ void sendDirectory(int controlSocket, int dataSocket, struct session *thisSessio
 
 
 }
-
+/******************************************************
+#   funcName
+#   @desc: 	
+#   @param: 
+#   @return: 
+******************************************************/
 void sendFile(int controlSocket, int dataSocket, struct session *thisSession){
 
 }
 
+/******************************************************
+#   funcName
+#   @desc: 	
+#   @param: 
+#   @return: 
+******************************************************/
 void setupDataConnection(int controlSocket, int &dataSocket, struct session *thisSession)
 {
 	/*Create client socket*/
@@ -330,6 +382,12 @@ void setupDataConnection(int controlSocket, int &dataSocket, struct session *thi
 	}
 
 }
+/******************************************************
+#   funcName
+#   @desc: 	
+#   @param: 
+#   @return: 
+******************************************************/
 bool handleRequest(int controlSocket, int serverSocket, struct session *thisSession)
 {
 	/*Get commands from connection*/
@@ -406,7 +464,5 @@ void parseMessage(int socketFD, struct session *thisSession)
     thisSession->numCommands=num;
     *comms--;
     *comms=0;/*Make it null terminated*/
-
-
 
 }
