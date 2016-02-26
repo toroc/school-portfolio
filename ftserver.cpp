@@ -59,18 +59,19 @@ struct session{
 
 
 session* createSession();
+
+void indentifyCommands(struct session *thisSession);
 /*function prototypes*/
 
 /*Socket & Connection Prototypes */
 void startServer(int &serverSocket, int ftPort);
-void startNewConnection(int &controlSocket, int serverSocket);
-void setupDataConnection(int &dataSocket, struct session *thisSession);
+void startNewConnection(int &controlSocket, int serverSocket, struct sockaddr_in &client, socklen_t &clientLength);
+void setupDataConnection(int controlSocket, int &dataSocket, struct session *thisSession);
 bool handleRequest(int controlSocket, int serverSocket, struct session *thisSession);
-
 /*Socket helper functions*/
 void listening(int port);
 void intro();
-
+void saveClientAddr(struct session *thisSession, struct sockaddr_in client);
 
 void sigHandler(int n);
 void clientConnected(string name);
@@ -99,7 +100,7 @@ int main(int argc, char *argv[])
 		exit(1);
 
 	}
-
+	/*Create session*/
 	struct session *curSession=createSession();
 
 	/*Socket File descriptors*/
@@ -107,8 +108,8 @@ int main(int argc, char *argv[])
 	int controlSocket;
 	
 
-	char hostName[1024], service[20];
-	addr_size = sizeof(client_addr);
+	struct sockadrr_in clientAddr;
+	socklen_t clientLength = sizeof(clientAddr);
 	
 	/*Store port #*/
 	int portNumber = atoi(argv[1]);
@@ -117,17 +118,21 @@ int main(int argc, char *argv[])
 	/*Setup server & listen for connections*/
 	startServer(serverSocket, portNumber);
 
+
+
 	
 	while (true)
 	{
 		/*Start control connection*/
-		startNewConnection(controlSocket, serverSocket);
+		startNewConnection(controlSocket, serverSocket, clientAddr, clientLength);
 
+		/*Store client address in struct object*/
+		saveClientAddr(curSession, clientAddr);
 
 		while (true)
 		{
 			/*Handle client requests*/
-			handleRequest(controlSocket, serverSocket);
+			handleRequest(controlSocket, serverSocket, curSession);
 			/*Read message*/
 			
 		}
@@ -193,15 +198,13 @@ void startServer(int &serverSocket, int ftPort)
 	listening(ftPort);
 }
 
-void startNewConnection(int &controlSocket, int serverSocket)
+void startNewConnection(int &controlSocket, int serverSocket, struct sockaddr_in &client, socklen_t &clientLength)
 {
 	int newSocketFD;
-	struct sockaddr_in client;
-	socklen_t clientLength=sizeof(client);
 	char clientName[1024];
 	char service[20];
 
-	controlSocket=accept(serverSocket, (struct sockaddr*), &client,&clientLength);
+	controlSocket=accept(serverSocket, (struct sockaddr*) &client,&clientLength);
 
 	/*Ensure connection worked*/
 	if(controlSocket<0){
@@ -241,7 +244,11 @@ void sigHandler(int n)
 }
 
 
+void saveClientAddr(struct session *thisSession, struct sockaddr_in client)
+{
+	thisSession->clientAddr=client;
 
+}
 
 /******************************************************
 #   getDirectoryContents
@@ -263,7 +270,7 @@ string getDirectoryContents()
 
 	/*Ensure open worked*/
 	if(dirPointer == NULL){
-		cout << "Unable to open folder to read file" << endl;
+		cout << "Error: unable to open folder to read file" << endl;
 		exit(1);
 	}
 
@@ -284,36 +291,45 @@ string getDirectoryContents()
 	return dirContents;
 	
 }
-void sendDirectory(ServerSocket &dataSock)
+void sendDirectory(int controlSocket, int dataSocket, struct session *thisSession)
 {
+	int bytesSent=0;
+	int len=contents.length();
 	string contents = getDirectoryContents();
 
 	/*Send string to client*/
+	bytesSent=send(dataSocket, contents, len, 0);
 
-
-
-}
-
-void setupDataConnection(int &dataSocket, struct session *thisSession)
-{
-	/*Get name of host name and service*/
-	/*Start a new process*/
-
-	childPID=fork();
-
-	if (childPID<0){
+	if(bytesSent==-1){
 		/*Error*/
+		cout << "Error: unable to send directory contents" << endl;
 	}
 
-	if(childPID==0)
-	{
-		cout << "Connection from client"<< endl;
 
-		close(server);
-
-	}
 }
 
+void sendFile(int controlSocket, int dataSocket, struct session *thisSession){
+
+}
+
+void setupDataConnection(int controlSocket, int &dataSocket, struct session *thisSession)
+{
+	/*Create client socket*/
+	dataSocket=socket(AF_INET, SOCK_STREAM,0);
+	
+	/*Ensure it worked*/
+
+	int port = thisSession->portNumber;
+	/*Change port of the */
+	theSession->clientAddr.sin_port=htons(port);
+
+	/*Connect*/
+	if (connect(dataSocket, (struct sockaddr*)thisSession->clientAddr, sizeof(thisSession->clientAddr))==-1){
+		/*error*/
+		cout << "Error: unable to create data connection" << endl;
+	}
+
+}
 bool handleRequest(int controlSocket, int serverSocket, struct session *thisSession)
 {
 	/*Get commands from connection*/
@@ -324,6 +340,10 @@ bool handleRequest(int controlSocket, int serverSocket, struct session *thisSess
 
 
 	/*Identify commands received*/	
+
+	/*Start data connection*/
+	int dataSocket;
+	setupDataConnection(&controlSocket, &dataSocket, thisSession);
 
 }
 /******************************************************
