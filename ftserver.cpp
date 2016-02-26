@@ -61,7 +61,7 @@ session* createSession();
 void freeSession(struct session *thisSession);
 
 
-
+void checkCommandLine(int argcount, char *args[]);
 /*function prototypes*/
 
 /*Socket & Connection Prototypes */
@@ -99,12 +99,7 @@ int main(int argc, char *argv[])
 {
 
 	/*Check command line arguments are correct*/
-	if (argc <= 1) // argc should be 2 for correct execution
-	{
-		cout << "Usage: " << argv[0] << " <portNumber>\n";
-		exit(1);
-
-	}
+	checkCommandLine(argc, argv);
 	/*Create session*/
 	struct session *curSession=createSession();
 
@@ -147,6 +142,22 @@ int main(int argc, char *argv[])
 	freeSession(curSession);
 
 	return 0;
+}
+
+/******************************************************
+#   checkCommandLine
+#   @desc: ensure program is executed with correct
+#       command else, program ends
+#   @param: int of count of command line arguments used
+#		array of strings with values of arguments
+#   @return: n/a
+******************************************************/
+void checkCommandLine(int argcount, char *args[])
+{
+	if(argcount<=1){
+		cout << "Usage: " << args[0] << " <portNumber>\n";
+		exit(1);
+	}
 }
 /******************************************************
 #   Session Data Structure Functions
