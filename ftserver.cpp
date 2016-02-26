@@ -39,6 +39,7 @@ using namespace std;
 #define MAX_COMMANDS 5
 
 
+typedef enum{INVALID=0, LIST, FILE}CTYPE;
 
 /*Session Data Structure*/
 typedef struct session session;
@@ -49,6 +50,7 @@ struct session{
 	int msgLength;
 	char **commands;
 	int numCommands;
+	CTYPE type;
 	int commValid; /*0=false, 1=true*/
 	char *fileName;
 	int dataPort;
@@ -107,9 +109,6 @@ int main(int argc, char *argv[])
 	/*Create session*/
 	struct session *curSession=createSession();
 
-
-
-
 	/*Setup server & listen for connections*/
 	startServer(curSession, portNumber);
 
@@ -128,7 +127,6 @@ int main(int argc, char *argv[])
 
 		}
 	}
-
 
 	freeSession(curSession);
 
@@ -188,6 +186,7 @@ void freeSession(struct session *thisSession)
 	free(thisSession);
 
 }
+
 
 
 
@@ -386,8 +385,43 @@ void parseMessage(struct session *thisSession)
     *comms=0;/*Make it null terminated*/
 
 }
+/******************************************************
+#   identifyCommands
+#   @desc:
+#   @param: 
+#   @return:
+******************************************************/
+void identifyCommands(struct session *thisSession)
+{
+	/**/
+	if(thisSession->numCommands>3){
+		cout << "Too many commands" << endl;
+		thisSession->type=INVALID;
+	}
+	/*List directory*/
+	if(thisSession->numCommands==2){
+		/*Compare 1st command to -l */
+		
 
+		/*Convert 2nd command to int*/
 
+		/*Store it in struct*/
+
+		/*Set command type*/
+		thisSession->type=LIST;
+	}
+
+	if(thisSession->numCommands==3){
+
+		/*Compare 1st command to -g*/
+
+		/*Conver 3rd command to int*/
+
+		/*Set command type*/
+		thisSession->type=FILE;
+
+	}
+}
 /******************************************************
 #   Helper function used to print to console that
 #   chat serve is listening
@@ -476,7 +510,7 @@ string getDirectoryContents()
 #   @param:
 #   @return:
 ******************************************************/
-void sendDirectory(int controlSocket, int dataSocket, struct session *thisSession)
+void sendDirectory(struct session *thisSession)
 {
 	int bytesSent=0;
 	string contents = getDirectoryContents();
@@ -486,7 +520,7 @@ void sendDirectory(int controlSocket, int dataSocket, struct session *thisSessio
 	const void * dirCont = contents.c_str();
 
 	/*Send string to client*/
-	bytesSent=send(dataSocket, dirCont, len, 0);
+	bytesSent=send(thisSession->dataSocket, dirCont, len, 0);
 
 	if(bytesSent==-1){
 		/*Error*/
@@ -502,6 +536,14 @@ void sendDirectory(int controlSocket, int dataSocket, struct session *thisSessio
 #   @return:
 ******************************************************/
 void sendFile(struct session *thisSession){
+
+	/*Variables with messages to send*/
+
+	string notFound="FILE NOT FOUND";
+
+
+	
+
 
 }
 
