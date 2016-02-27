@@ -123,19 +123,12 @@ def getReply(sock):
 #   Function to parse the various arguments the program needs
 #       to be able to run
 #------------------------------------------------------------
-def argsNeeded():
-    """Ensure program is called with correct arguments."""
-    parser = argparse.ArgumentParser(description='Simple file transfer client.')
-    parser.add_argument('SERVER_HOST')
-    parser.add_argument('SERVER_PORT')
-    parser.add_argument('COMMAND')
-    parser.add_argument('-FILENAME')
-    parser.add_argument('DATA_PORT')
-    args = parser.parse_args()
+
+
 
 
 def main():
-    argsNeeded()
+    
 
     #save arguments passed into program
     serverName = str(sys.argv[1])
