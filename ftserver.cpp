@@ -70,11 +70,15 @@ void checkCommandLine(int argcount, char *args[]);
 /*Socket & Connection Prototypes */
 void startServer(struct session *thisSession, int ftPort);
 void startNewConnection(struct session *thisSession);
-void handleRequest(struct session *thisSession);
+bool handleRequest(struct session *thisSession);
 void setupDataConnection(struct session *thisSession);
 void respondToRequest(struct session *thisSession);
 
+void closeDataSocket(struct session *thisSession);
+
+
 /*Connection helper functions*/
+
 void receiveAll(struct session *thisSession);
 void parseMessage(struct session *thisSession);
 void identifyCommands(struct session *thisSession);
@@ -82,13 +86,13 @@ void identifyCommands(struct session *thisSession);
 /*Helper functions*/
 void listening(int port);
 void intro();
-void saveClientAddr(struct session *thisSession, struct sockaddr_in client);
 
 void sigHandler(int n);
 /*Request connections*/
 
 /*File Transfer helper functions*/
 string getDirectoryContents();
+bool fileinDir(struct session *thisSession);
 void sendDirectory(struct session *thisSession);
 void sendFile(struct session *thisSession);
 void sendError( struct session *thisSession);
@@ -117,11 +121,14 @@ int main(int argc, char *argv[])
 		/*Start control connection*/
 		startNewConnection(curSession);
 
-
-		
+		while (true)
+		{
 			/*Handle client requests*/
 			handleRequest(curSession);
 			/*Read message*/
+		}
+		
+
 
 		
 	}
@@ -281,7 +288,7 @@ void startNewConnection(struct session *thisSession)
 	}
 
 	/*Store client address in struct object*/
-	thisSession->client_addr=clientAddr;
+	thisSession->client_adr=clientAddr;
 
 
 }
@@ -291,7 +298,7 @@ void startNewConnection(struct session *thisSession)
 #   @param:
 #   @return:
 ******************************************************/
-void handleRequest(struct session *thisSession)
+bool handleRequest(struct session *thisSession)
 {
 	cout << "Inside handleRequest" << endl;
 	/*Get commands from connection*/
@@ -306,7 +313,11 @@ void handleRequest(struct session *thisSession)
 	/*Respond to client request*/
 	respondToRequest(thisSession);
 
-	
+	/*Close Connections*/
+
+
+	/*To indicate completion*/
+	return false;
 }
 
 
@@ -331,22 +342,30 @@ void setupDataConnection(struct session *thisSession)
 	client_addr.sin_addr.s_addr=thisSession->client_adr.sin_addr.s_addr;
 
 
-	/*Connect*/ /*Ensure it worked*/
-	if (connect(thisSession->dataSocket, (struct sockaddr*)&client_addr, sizeof(client_addr))==-1){
+	/*Connect*/ 
+	int result = connect(thisSession->dataSocket, (struct sockaddr*)&client_addr, sizeof(client_addr));
+
+	/*Ensure it worked*/
+	if (result <0){
 		/*error*/
 		cout << "Error: unable to create data connection" << endl;
 	}
 
 }
 
+void closeDataSocket(struct session *thisSession)
+{
+	int result = close(thisSession->dataSocket);
 
+	if(result ==-1){
+		cout << "Error: unable to close data socket."
+	}
+}
 void respondToRequest(struct session *thisSession)
 {
 	cout << "Inside respondToRequest" << endl;
 
 	if(thisSession->type==INVALID){
-
-
 		/*Send error message on control socket*/
 		sendError(thisSession);
 
@@ -440,9 +459,9 @@ void parseMessage(struct session *thisSession)
         num++;
     }
 
-    num--;
+  
     thisSession->numCommands=num;
-    *comms--;
+    
     *comms=0;/*Make it null terminated*/
 
 }
@@ -545,12 +564,7 @@ void sigHandler(int n)
 #   @param:
 #   @return:
 ******************************************************/
-void saveClientAddr(struct session *thisSession, struct sockaddr_in client)
-{
-	cout << "Inside saveClientAddr" << endl;
-	thisSession->client_adr=client;
 
-}
 
 /******************************************************
 #   File Transfer Helper Functions
@@ -568,7 +582,7 @@ string getDirectoryContents()
 	cout << "Inside getDirectoryContents" << endl;
 	/*directory pointer*/
 	DIR *dirPointer;
-	struct dirent *ep;
+	struct dirent *curDir;
 	/*Variable to contain contents of directory*/
 	string dirContents="";
 
@@ -582,10 +596,10 @@ string getDirectoryContents()
 	}
 
 	/*Loop thru files in directory*/
-	while(ep=readdir(dirPointer)){
+	while(curDir=readdir(dirPointer)){
 
 		/*Append file name string*/
-		dirContents+=ep->d_name;
+		dirContents+=curDir->d_name;
 		/*Append new line*/
 		dirContents+="\n";
 
@@ -629,8 +643,9 @@ void sendDirectory(struct session *thisSession)
 		cout << "ftserver > sending directory contents on port " << thisSession->dataPort << endl;
 	}
 
+	/*Close data socket*/
 
-
+	closeDataSocket(thisSession);
 
 }
 /******************************************************
@@ -643,15 +658,87 @@ void sendFile(struct session *thisSession){
 
 	/*Variables with messages to send*/
 
-	string notFound="FILE NOT FOUND";
+	FILE *fileFD;
+	int result;
+
+	char buffer[MAX_PACKET*2];
 
 
-	
 
+	bool fileFound=fileinDir(thisSession);
+
+	if(!fileFound){
+
+		cout << "ftserver > file requested by client not found." << endl;
+
+		string notFound="FILE NOT FOUND";
+		int len=notFound.length();
+
+		const void *errMsg=notFound.c_srt();
+
+		result = send(thisSession->dataSocket, errMsg, len, 0);
+		if(result<0){
+			cout << "Error: unable to send error message to client." << endl;
+		}
+
+		return;
+
+	}
+
+	/*Send file to client*/	
+
+	fileFD=fopen(thisSession->fileName.c_srt(),"r");
+
+	if(fileFD==NULL){
+		cout << "Error: unable to open file." << endl;
+	}
+
+	/*Load file items to buffer*/
+	while(fgets(buffer, sizeof(buffer), fileFD)!= NULL){
+
+		result=send(thisSession->dataSocket, buffer, strlen(buffer),0);
+
+		if(result<0){
+			cout << "Error: unable to send file data to client."<<endl;
+		}
+		else{
+			cout << "ftserver > sending " << thisSession->fileName << " on port " << thisSession->dataPort<<endl;
+		}
+
+		/*Wait before sending next data */
+
+		usleep(10);
+	}
+
+	fclose(fileFD);
+
+	/*Close data socket*/
+	closeDataSocket(thisSession);
 
 }
 
+bool fileinDir(struct session *thisSession)
+{
+	/*directory pointer*/
+	DIR *dirPointer;
+	struct dirent *curDir;
 
+	dirPointer=opendir(".");
+
+
+	/*Loop through files in directory*/
+	while((curDir=readdir(curDir))){
+
+		/*Return true if match*/
+		if(strncmp(curDir->d_name, thisSession->fileName.c_str())==0){
+			return true;
+		}
+	}
+
+	closedir(dirPointer);
+
+	return false;
+}
 void sendError( struct session *thisSession)
 {
 	/**/
@@ -666,7 +753,7 @@ void sendError( struct session *thisSession)
 	/*Send on control connection*/
 	if(thisSession->type==INVALID){
 
-		cout << "ftserver > Client sent over an invalid command." << endl;
+		cout << "ftserver > received invalid command from client." << endl;
 
 		/*Convert string to c string*/
 		const void * errMsg = thisSession->message.c_str();
@@ -675,7 +762,7 @@ void sendError( struct session *thisSession)
 
 		/*Ensure it worked*/
 		if(result<0){
-			cout << "Error: unable to send error message to client" << endl;
+			cout << "Error: unable to send error message to client." << endl;
 		}
 		
 	}

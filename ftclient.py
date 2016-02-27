@@ -37,11 +37,11 @@ def printControlMsg(name, control):
 
 def receiveDirMsg(server, data):
     """Print message to console."""
-    Print("Receiving directory contents from " +server+":"+str(data)+"\n")
+    print("Receiving directory contents from " +server+":"+str(data)+"\n")
 
 def receiveFileMsg(server, file, data):
     """."""
-    Print("Receiving "+file+" from "+server+":"+data+"\n")
+    print("Receiving "+file+" from "+server+":"+data+"\n")
 
 
 def commandType(command):
@@ -76,11 +76,11 @@ def connectSocket(sock, name, port):
 def listenSocket(sock, port):
     """Bind dataSocket to port."""
     # Get local name
-    host = socket.gethostname()
+   
     # Bind to the port     
-    sock.bind((host, port))
+    sock.bind(("", port))
 
-    Print("Waiting for server response on port "+str(port)+"\n")
+    print("Waiting for server response on port "+str(port)+"\n")
 
 #------------------------------------------------------------
 #   Functions to carry out printing messages to the console
@@ -91,7 +91,7 @@ def handleControl(sock, servName, servPort, command, file, dataPort):
     printControlMsg(servName, servPort)
     
     # String of message to send
-    msg=commandMsg(command,file, dataPort)
+    msg=commandMsg(command,dataPort, file)
 
     # Send command to server via control socket
     sendMessage(sock, msg)
@@ -103,7 +103,7 @@ def handleControl(sock, servName, servPort, command, file, dataPort):
 #       initializing, connecting, sending, and receiving
 #------------------------------------------------------------
 
-def commandMsg(comm, port,file, type):
+def commandMsg(comm, port,file):
     """Return stylized string of command message"""
     message=comm+" "+file+" "+str(port)
 
