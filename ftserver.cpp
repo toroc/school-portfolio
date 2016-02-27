@@ -398,7 +398,6 @@ void parseMessage(struct session *thisSession)
 void identifyCommands(struct session *thisSession)
 {
 	/**/
-<<<<<<< HEAD
 
 	char *list="-l";
 	int listLen=(unsigned)strlen(list);
@@ -411,25 +410,21 @@ void identifyCommands(struct session *thisSession)
 
 	strcpy(comms, thisSession->msgBuffer);
 
-=======
->>>>>>> ba63d5303123062252458ba5f19bd558cdc473c1
 	if(thisSession->numCommands>3){
 		cout << "Too many commands" << endl;
 		thisSession->type=INVALID;
 	}
 	/*List directory*/
 	if(thisSession->numCommands==2){
-<<<<<<< HEAD
 
 		/*Compare 1st command to -l */
 		if(strncmp(comms, list, listLen)==0){
 			cout << "Requesting list" << endl;
 		}
 
-=======
+
 		/*Compare 1st command to -l */
 		
->>>>>>> ba63d5303123062252458ba5f19bd558cdc473c1
 
 		/*Convert 2nd command to int*/
 
