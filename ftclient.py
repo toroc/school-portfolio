@@ -24,8 +24,7 @@ import argparse
 
 
 
-if __name__ == '__main__':
-    main()
+
 
 #------------------------------------------------------------
 #   Helper functions to output program messages to console
@@ -138,7 +137,6 @@ def argsNeeded():
 def main():
     argsNeeded()
 
-    # 
     #save arguments passed into program
     serverName = str(sys.argv[1])
     serverPort = int(sys.argv[2])
@@ -195,3 +193,5 @@ def main():
     # close TCP connection
     clientSocket.close
 
+if __name__ == '__main__':
+    main()
