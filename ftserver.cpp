@@ -246,6 +246,8 @@ void startServer(struct session *thisSession, int ftPort)
 
 	/*Print to console*/
 	listening(ftPort);
+
+	cout << "insided startServer" << endl;
 }
 /******************************************************
 #   startNewConnection
@@ -255,6 +257,8 @@ void startServer(struct session *thisSession, int ftPort)
 ******************************************************/
 void startNewConnection(struct session *thisSession)
 {
+
+	cout << "Inside start new connection" << endl;
 	char clientName[1024];
 	char service[20];
 
@@ -288,8 +292,8 @@ void startNewConnection(struct session *thisSession)
 #   @return:
 ******************************************************/
 void handleRequest(struct session *thisSession)
-
 {
+	cout << "Inside handleRequest" << endl;
 	/*Get commands from connection*/
 	receiveAll(thisSession);
 
@@ -314,6 +318,7 @@ void handleRequest(struct session *thisSession)
 ******************************************************/
 void setupDataConnection(struct session *thisSession)
 {
+	cout << "Inside setupDataConnection" << endl;
 	/*Create client socket*/
 	thisSession->dataSocket=socket(AF_INET, SOCK_STREAM,0);
 
@@ -337,7 +342,8 @@ void setupDataConnection(struct session *thisSession)
 
 void respondToRequest(struct session *thisSession)
 {
-	
+	cout << "Inside respondToRequest" << endl;
+
 	if(thisSession->type==INVALID){
 
 
@@ -380,6 +386,8 @@ void respondToRequest(struct session *thisSession)
 ******************************************************/
 void receiveAll(struct session *thisSession){
 
+	cout << "Inside receiveAll" << endl;
+
 	/*Clear the buffer*/
 	bzero(thisSession->msgBuffer, MAX_PACKET);
 	/*Variable to keep track of bytes read*/
@@ -407,6 +415,8 @@ void receiveAll(struct session *thisSession){
 /*Repurposed this function from a CS344 function */
 void parseMessage(struct session *thisSession)
 {
+	cout << "Inside parseMessage" << endl;
+
 	char *buf=thisSession->msgBuffer;
 	char **comms=thisSession->commands;
 	int num=0;
@@ -445,10 +455,10 @@ void parseMessage(struct session *thisSession)
 void identifyCommands(struct session *thisSession)
 {
 	/**/
-
-	char *list="-l";
+	cout << "Inside identifyCommands" << endl;
+	char const *list="-l";
 	int listLen=(unsigned)strlen(list);
-	char *get="-g";
+	char const *get="-g";
 
 	/*Make copy of command */
 	int cmLen=(unsigned)strlen(thisSession->msgBuffer);
@@ -537,6 +547,7 @@ void sigHandler(int n)
 ******************************************************/
 void saveClientAddr(struct session *thisSession, struct sockaddr_in client)
 {
+	cout << "Inside saveClientAddr" << endl;
 	thisSession->client_adr=client;
 
 }
@@ -554,6 +565,7 @@ void saveClientAddr(struct session *thisSession, struct sockaddr_in client)
 ******************************************************/
 string getDirectoryContents()
 {
+	cout << "Inside getDirectoryContents" << endl;
 	/*directory pointer*/
 	DIR *dirPointer;
 	struct dirent *ep;
