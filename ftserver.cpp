@@ -39,17 +39,13 @@ using namespace std;
 #define MAX_COMMANDS 5
 
 
-typedef enum{INVALID=0, LIST, FILE}CTYPE;
+typedef enum{INVALID=0, LIST, GET}CTYPE;
 
 /*Session Data Structure*/
 typedef struct session session;
 
 struct session{
-<<<<<<< HEAD
 	char *msgBuffer; /*String to capture incoming message*/
-=======
-	char *msgBuffer;
->>>>>>> ba63d5303123062252458ba5f19bd558cdc473c1
 	string message;
 	int msgLength;
 	char **commands;
@@ -441,7 +437,7 @@ void identifyCommands(struct session *thisSession)
 		/*Conver 3rd command to int*/
 
 		/*Set command type*/
-		thisSession->type=FILE;
+		thisSession->type=GET;
 
 	}
 }
