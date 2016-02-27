@@ -337,15 +337,12 @@ void setupDataConnection(struct session *thisSession)
 
 void respondToRequest(struct session *thisSession)
 {
-	/**/
-	string invalidCommand="Error. Command is invalid.";
-
+	
 	if(thisSession->type==INVALID){
 
-		thisSession->message=invalidCommand;
 
 		/*Send error message on control socket*/
-		sendAll(thisSession);
+		sendError(thisSession);
 
 		return;
 
@@ -645,6 +642,11 @@ void sendFile(struct session *thisSession){
 
 void sendError( struct session *thisSession)
 {
+	/**/
+	string invalidCommand="Error. Command is invalid.";
+	thisSession->message=invalidCommand;
+
+
 	int length = thisSession->message.length();
 
 	int result;
@@ -654,8 +656,10 @@ void sendError( struct session *thisSession)
 
 		cout << "ftserver > Client sent over an invalid command." << endl;
 
-		/*Convert to c string*/
-		result=send(thisSession->controlSocket, thisSession->message, length,0);
+		/*Convert string to c string*/
+		const void * errMsg = thisSession->message.c_str();
+
+		result=send(thisSession->controlSocket, errMsg, length,0);
 
 		/*Ensure it worked*/
 		if(result<0){
