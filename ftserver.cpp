@@ -31,7 +31,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <vector>
 
 using namespace std;
 //#define DEBUG 0
@@ -52,7 +51,7 @@ struct session{
 	int numCommands;
 	CTYPE type;
 	int commValid; /*0=false, 1=true*/
-	char *fileName;
+	string fileName;
 	int dataPort;
 	/*Socket file descriptors*/
 	int serverSocket; /*Used for listening*/
@@ -71,9 +70,9 @@ void checkCommandLine(int argcount, char *args[]);
 /*Socket & Connection Prototypes */
 void startServer(struct session *thisSession, int ftPort);
 void startNewConnection(struct session *thisSession);
-bool handleRequest(struct session *thisSession);
+void handleRequest(struct session *thisSession);
 void setupDataConnection(struct session *thisSession);
-
+void respondToRequest(struct session *thisSession);
 
 /*Connection helper functions*/
 void receiveAll(struct session *thisSession);
@@ -92,7 +91,7 @@ void sigHandler(int n);
 string getDirectoryContents();
 void sendDirectory(struct session *thisSession);
 void sendFile(struct session *thisSession);
-void sendAll( struct session *thisSession);
+void sendError( struct session *thisSession);
 void readSocket(struct session *thisSession);
 void socketSend();
 
@@ -213,16 +212,34 @@ void startServer(struct session *thisSession, int ftPort)
 {
 	/*Create server socket*/
 	thisSession->serverSocket=socket(AF_INET, SOCK_STREAM, 0);
+	
+	/*Ensure it worked*/
+	if(thisSession->serverSocket<0){
+		cout << "Error: unable to create socket." << endl;
+	}
 
 	struct sockaddr_in server;
+	int optval=1;
 
 	/*Setup server socket*/
 	server.sin_family = AF_INET;
 	server.sin_port=htons(ftPort);
 	server.sin_addr.s_addr=INADDR_ANY;
 
+	/*Allow reuse of address*/
+	int res=setsockopt(thisSession->serverSocket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+	/*Ensure it worked*/
+	if(res==-1){
+		cout << "Error: unable to setup SO_REUSEADDR." << endl;
+	}
+
 	/*Bind server socket*/
-	bind(thisSession->serverSocket, (struct sockaddr *) &server, sizeof(server));
+	res=bind(thisSession->serverSocket, (struct sockaddr *) &server, sizeof(server));
+	if(res<0){
+		cout << "Error: unable to bind to host address." << endl;
+		exit(EXIT_FAILURE);
+	}
 
 	/*Listen for incoming connections*/
 	listen(thisSession->serverSocket, 1);
@@ -270,7 +287,7 @@ void startNewConnection(struct session *thisSession)
 #   @param:
 #   @return:
 ******************************************************/
-bool handleRequest(struct session *thisSession)
+void handleRequest(struct session *thisSession)
 
 {
 	/*Get commands from connection*/
@@ -280,12 +297,12 @@ bool handleRequest(struct session *thisSession)
 	parseMessage(thisSession);
 
 	/*Identify commands received*/
+	identifyCommands(thisSession);
 
-	/*Start data connection*/
-	setupDataConnection(thisSession);
+	/*Respond to client request*/
+	respondToRequest(thisSession);
 
-
-	return true;
+	
 }
 
 
@@ -316,6 +333,43 @@ void setupDataConnection(struct session *thisSession)
 	}
 
 }
+
+
+void respondToRequest(struct session *thisSession)
+{
+	/**/
+	string invalidCommand="Error. Command is invalid.";
+
+	if(thisSession->type==INVALID){
+
+		thisSession->message=invalidCommand;
+
+		/*Send error message on control socket*/
+		sendAll(thisSession);
+
+		return;
+
+	}
+
+
+	/*Start data connection*/
+	setupDataConnection(thisSession);
+
+	if(thisSession->type==LIST){
+
+		sendDirectory(thisSession);
+
+		return;
+	}
+
+
+	if(thisSession->type==GET){
+		sendFile(thisSession);
+
+		return;
+	}
+}
+
 
 
 /******************************************************
@@ -417,27 +471,44 @@ void identifyCommands(struct session *thisSession)
 		if(strncmp(comms, list, listLen)==0){
 			cout << "Requesting list" << endl;
 		}
-
-
-		/*Compare 1st command to -l */
-		
+		else{
+			thisSession->type=INVALID;
+		}
 
 		/*Convert 2nd command to int*/
-
+		int data=atoi(thisSession->commands[1]);
+		
 		/*Store it in struct*/
+		thisSession->dataPort=data;
 
 		/*Set command type*/
 		thisSession->type=LIST;
+
+		/*Print console message*/
+		cout << "ftserver > List directory requested on port "<< thisSession->dataPort<< endl;
 	}
 
 	if(thisSession->numCommands==3){
 
 		/*Compare 1st command to -g*/
+		if(strncmp(comms,get,listLen)==0){
+			cout << "Requesting file" << endl;
+		}
+		else{
+			thisSession->type=INVALID;
+		}
 
-		/*Conver 3rd command to int*/
+		/*Store filename in data structure*/
+		thisSession->fileName=thisSession->commands[1];
+		
+		/*Convert 3rd command to int*/
+		int data=atoi(thisSession->commands[2]);
 
 		/*Set command type*/
 		thisSession->type=GET;
+
+
+		cout << "ftserver > File " << thisSession->fileName << " requested on port " << thisSession->dataPort << endl;
 
 	}
 }
@@ -447,7 +518,7 @@ void identifyCommands(struct session *thisSession)
 ******************************************************/
 void listening(int port)
 {
-	cout << "Port #" << port << ": ftserver is now listing for incoming connections.\n" << endl;
+	cout << "ftserver > Port #" << port << ": ftserver is now listing for incoming connections.\n" << endl;
 }
 
 
@@ -545,6 +616,11 @@ void sendDirectory(struct session *thisSession)
 		/*Error*/
 		cout << "Error: unable to send directory contents" << endl;
 	}
+	else{
+		cout << "ftserver > sending directory contents on port " << thisSession->dataPort << endl;
+	}
+
+
 
 
 }
@@ -567,6 +643,27 @@ void sendFile(struct session *thisSession){
 }
 
 
+void sendError( struct session *thisSession)
+{
+	int length = thisSession->message.length();
 
+	int result;
+
+	/*Send on control connection*/
+	if(thisSession->type==INVALID){
+
+		cout << "ftserver > Client sent over an invalid command." << endl;
+
+		/*Convert to c string*/
+		result=send(thisSession->controlSocket, thisSession->message, length,0);
+
+		/*Ensure it worked*/
+		if(result<0){
+			cout << "Error: unable to send error message to client" << endl;
+		}
+		
+	}
+
+}
 
 
