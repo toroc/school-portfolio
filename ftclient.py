@@ -28,35 +28,25 @@ if __name__ == '__main__':
     main()
 
 #------------------------------------------------------------
-#   Helper functions to print directions, get data from user 
-#   and format the data that will be sent via socket connection
+#   Helper functions to output program messages to console
+#   
 #------------------------------------------------------------
-def printDirections(name, control):
-    """Print to console program directions."""
+def printControlMsg(name, control):
+    """Print to console message re control socket."""
     print("Control connection established with server "+ name + " on port "+ str(control)+"\n")
-    print("Sending request.\n")
+    print("Sending request.\n")  
 
-def buildMessage()
+def receiveDirMsg(server, data):
+    """Print message to console."""
+    Print("Receiving directory contents from " +server+":"+str(data)+"\n")
 
+def receiveFileMsg(server, file, data):
+    """."""
+    Print("Receiving "+file+" from "+server+":"+data+"\n")
 
-def getMessage(handle):
-    """Return a string User wants to send."""
-    curMessage = raw_input(handle + "> ")
-
-    # Ask user for shorter message if over 500 characters
-    while(len(curMessage) > 500):
-        curMessage = raw_input("Message too long, try again:\n" + handle + "> ")
-
-    return curMessage
-    
-
-def prepend(handle, message):
-    """Return a stylized string of user's message."""
-    newMessage = handle + "> " + message
-    return newMessage
 
 def commandType(command):
-    """Print type of command received"""
+    """Return type of command"""
 
     if command[1]=="l":
         print("Requesting list\n")
@@ -65,6 +55,7 @@ def commandType(command):
     if command[1]=="g":
         print("Getting file")
         return 1
+    
     #wrong command 
     return -1 
 
@@ -81,6 +72,30 @@ def createSocket():
 def connectSocket(sock, name, port):
     """Process a socket connection."""
     sock.connect((name, port))
+
+
+def listenSocket(sock, port):
+    """Bind dataSocket to port."""
+    # Get local name
+    host = socket.gethostname()
+    # Bind to the port     
+    sock.bind((host, port))
+
+    Print("Waiting for server response on port "+str(port)+"\n")
+
+#------------------------------------------------------------
+#   Functions to carry out printing messages to the console
+#------------------------------------------------------------
+
+
+
+
+
+#------------------------------------------------------------
+#   Functions to carry out socket connection processes of
+#       initializing, connecting, sending, and receiving
+#------------------------------------------------------------
+
 
 
 def sendMessage(sock, mess):
@@ -126,10 +141,10 @@ def main():
     cType=commandType(command)
 
     # Create control connection to server SOCK_STREAM
-    clientSocket = createSocket()
+    controlSocket = createSocket()
 
     # initiate handshake and begin TCP connection
-    connectSocket(clientSocket, serverName, serverPort)
+    connectSocket(controlSocket, serverName, serverPort)
 
    
     
@@ -138,27 +153,27 @@ def main():
 
         printDirections()
 
-        # Send command to server
-        message = getMessage(handle)
+        # Send command to server via control socket
         
-        
-        
-        # stylize message to send with handle and >
-        mToSend = prepend(handle, message)
+        #Create data socket
+        dataSocket=createSocket()
 
-        # send message via TCP connection
-        sendMessage(clientSocket, mToSend)
-       
-        receivedMessage = getReply(clientSocket)
-        
-        # close connection whenever server \quits their connection
-        amountReceived = len(receivedMessage)
+        # Listen on 2nd port for server response
+        listenSocket(dataSocket, dataPort)
 
-        if (amountReceived < 1):
-            print("Uh-oh, chatserve closed the connection. Program will exit.")
-            break
-        else:
-            print(receivedMessage.decode())
+        while(True):
+
+            # Connected with server on data socket
+
+            if(cType==1):
+                receiveDirMsg(serverName, dataPort)
+
+
+
+
+
+
+        
         
 
 
