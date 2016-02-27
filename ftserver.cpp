@@ -45,7 +45,7 @@ typedef enum{INVALID=0, LIST, FILE}CTYPE;
 typedef struct session session;
 
 struct session{
-	char *msgBuffer;
+	char *msgBuffer; /*String to capture incoming message*/
 	string message;
 	int msgLength;
 	char **commands;
@@ -394,14 +394,30 @@ void parseMessage(struct session *thisSession)
 void identifyCommands(struct session *thisSession)
 {
 	/**/
+
+	char *list="-l";
+	int listLen=(unsigned)strlen(list);
+	char *get="-g";
+
+	/*Make copy of command */
+	int cmLen=(unsigned)strlen(thisSession->msgBuffer);
+
+	char comms[cmLen];
+
+	strcpy(comms, thisSession->msgBuffer);
+
 	if(thisSession->numCommands>3){
 		cout << "Too many commands" << endl;
 		thisSession->type=INVALID;
 	}
 	/*List directory*/
 	if(thisSession->numCommands==2){
+
 		/*Compare 1st command to -l */
-		
+		if(strncmp(comms, list, listLen)==0){
+			cout << "Requesting list" << endl;
+		}
+
 
 		/*Convert 2nd command to int*/
 
