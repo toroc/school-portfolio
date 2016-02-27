@@ -118,13 +118,12 @@ int main(int argc, char *argv[])
 		startNewConnection(curSession);
 
 
-		while (true)
-		{
+		
 			/*Handle client requests*/
 			handleRequest(curSession);
 			/*Read message*/
 
-		}
+		
 	}
 
 	freeSession(curSession);
