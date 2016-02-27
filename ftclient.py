@@ -87,7 +87,15 @@ def listenSocket(sock, port):
 #   Functions to carry out printing messages to the console
 #------------------------------------------------------------
 
+def handleControl(sock, servName, servPort, command, file, dataPort):
 
+    printControlMsg(servName, servPort)
+    
+    # String of message to send
+    msg=commandMsg(command,file, dataPort)
+
+    # Send command to server via control socket
+    sendMessage(sock, msg)
 
 
 
@@ -96,6 +104,11 @@ def listenSocket(sock, port):
 #       initializing, connecting, sending, and receiving
 #------------------------------------------------------------
 
+def commandMsg(comm, port,file, type):
+    """Return stylized string of command message"""
+    message=comm+" "+file+" "+str(port)
+
+    return message
 
 
 def sendMessage(sock, mess):
@@ -131,7 +144,7 @@ def main():
     serverPort = int(sys.argv[2])
     command=str(sys.argv[3])
     dataPort=int(sys.argv[4])
-    filename
+    filename=""
 
     if(len(sys.argv)==6):
         dataPort=int(sys.argv[5])
@@ -151,9 +164,11 @@ def main():
 
     while(True):
 
-        printDirections()
+        # handle control connection
+        handleControl(controlSocket, serverName, serverPort, command, filename, dataPort)
+        
 
-        # Send command to server via control socket
+        
         
         #Create data socket
         dataSocket=createSocket()
