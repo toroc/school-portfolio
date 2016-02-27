@@ -281,7 +281,8 @@ void startNewConnection(struct session *thisSession)
 	}
 
 	/*Store client address in struct object*/
-	saveClientAddr(thisSession, clientAddr);
+	thisSession->client_addr=clientAddr;
+
 
 }
 /******************************************************
