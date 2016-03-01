@@ -58,6 +58,7 @@ struct session{
 	int controlSocket; /*Used for connecting with client*/
 	int dataSocket; /*Used for sending data to client*/
 	struct sockaddr_in client_adr;
+	string clientName;
 };
 /*Data Structure initialization functions*/
 session* createSession();
@@ -98,7 +99,7 @@ void sendFile(struct session *thisSession);
 void sendError( struct session *thisSession);
 void readSocket(struct session *thisSession);
 void socketSend();
-
+void sendOK(struct session *thisSession);
 
 int main(int argc, char *argv[])
 {
@@ -287,9 +288,11 @@ void startNewConnection(struct session *thisSession)
 		cout << "Connection from " << clientName << endl;
 	}
 
-	/*Store client address in struct object*/
+	/*Store client address in session data structure*/
 	thisSession->client_adr=clientAddr;
 
+	/*Store client name in session data structure*/
+	thisSession->clientName=clientName;
 
 }
 /******************************************************
@@ -330,25 +333,37 @@ bool handleRequest(struct session *thisSession)
 void setupDataConnection(struct session *thisSession)
 {
 	cout << "Inside setupDataConnection" << endl;
-	/*Create client socket*/
-	thisSession->dataSocket=socket(AF_INET, SOCK_STREAM,0);
 
+	/*Save data port*/
 	int port = thisSession->dataPort;
 
-	/*Change port of the */
-	struct sockaddr_in client_addr;
-	client_addr.sin_family=AF_INET;
-	client_addr.sin_port=htons(port);
-	client_addr.sin_addr.s_addr=thisSession->client_adr.sin_addr.s_addr;
+	/*Get the client's address*/
+	struct sockaddr_in cl_address;
+
+	socklen_t len=sizeof(thisSession->client_adr);
+
+	int result =getpeername(thisSession->controlSocket, (struct sockaddr *)&cl_address,&len);
+	
+	if (result ==-1){
+		cout << "Error: unable to get peer's address." << endl;
+	}
 
 
-	/*Connect*/ 
-	int result = connect(thisSession->dataSocket, (struct sockaddr*)&client_addr, sizeof(client_addr));
+	/*Change port to the data port */
+	cl_address.sin_port = htons(thisSession->dataPort);
+
+
+	/*Create data socket*/
+	thisSession->dataSocket=socket(AF_INET, SOCK_STREAM,0);
+
+	/*Attempt to connect with peer over different socket*/
+	result = connect(thisSession->dataSocket, (struct sockaddr*)&cl_address, sizeof(cl_address));
+
 
 	/*Ensure it worked*/
 	if (result <0){
 		/*error*/
-		cout << "Error: unable to create data connection" << endl;
+		cout << "Error: unable to create data connection." << endl;
 	}
 
 }
@@ -358,7 +373,7 @@ void closeDataSocket(struct session *thisSession)
 	int result = close(thisSession->dataSocket);
 
 	if(result ==-1){
-		cout << "Error: unable to close data socket."
+		cout << "Error: unable to close data socket." << endl;
 	}
 }
 void respondToRequest(struct session *thisSession)
@@ -373,6 +388,8 @@ void respondToRequest(struct session *thisSession)
 
 	}
 
+	/*Since no error send OK on connection P*/
+	sendOK(thisSession);
 
 	/*Start data connection*/
 	setupDataConnection(thisSession);
@@ -530,6 +547,9 @@ void identifyCommands(struct session *thisSession)
 		/*Convert 3rd command to int*/
 		int data=atoi(thisSession->commands[2]);
 
+		/*Store in struct*/
+		thisSession->dataPort=data;
+
 		/*Set command type*/
 		thisSession->type=GET;
 
@@ -674,7 +694,7 @@ void sendFile(struct session *thisSession){
 		string notFound="FILE NOT FOUND";
 		int len=notFound.length();
 
-		const void *errMsg=notFound.c_srt();
+		const void *errMsg=notFound.c_str();
 
 		result = send(thisSession->dataSocket, errMsg, len, 0);
 		if(result<0){
@@ -687,7 +707,7 @@ void sendFile(struct session *thisSession){
 
 	/*Send file to client*/	
 
-	fileFD=fopen(thisSession->fileName.c_srt(),"r");
+	fileFD=fopen(thisSession->fileName.c_str(),"r");
 
 	if(fileFD==NULL){
 		cout << "Error: unable to open file." << endl;
@@ -727,10 +747,12 @@ bool fileinDir(struct session *thisSession)
 
 
 	/*Loop through files in directory*/
-	while((curDir=readdir(curDir))){
+	while((curDir=readdir(dirPointer))){
+
+		int len=thisSession->fileName.length();
 
 		/*Return true if match*/
-		if(strncmp(curDir->d_name, thisSession->fileName.c_str())==0){
+		if(strncmp(curDir->d_name, thisSession->fileName.c_str(),len)==0){
 			return true;
 		}
 	}
@@ -769,4 +791,17 @@ void sendError( struct session *thisSession)
 
 }
 
+void sendOK(struct session *thisSession)
+{
+	string msg="OK";
+	int len = msg.length();
 
+	/*Convert string to c string*/
+	const void *okMsg = msg.c_str();
+
+	int result = send(thisSession->controlSocket, okMsg,len,0);
+
+	if(result<0){
+		cout << "Error: unable to send OK response to client." << endl;
+	}
+}
