@@ -97,6 +97,7 @@ bool fileinDir(struct session *thisSession);
 void sendDirectory(struct session *thisSession);
 void sendFile(struct session *thisSession);
 void sendError( struct session *thisSession);
+void sendFileError(struct session *thisSession);
 void readSocket(struct session *thisSession);
 void socketSend();
 void sendOK(struct session *thisSession);
@@ -122,16 +123,10 @@ int main(int argc, char *argv[])
 		/*Start control connection*/
 		startNewConnection(curSession);
 
-		while (true)
-		{
-			/*Handle client requests*/
-			handleRequest(curSession);
-			/*Read message*/
-		}
 		
-
-
-		
+		/*Handle client requests*/
+		handleRequest(curSession);
+					
 	}
 
 	freeSession(curSession);
@@ -254,7 +249,7 @@ void startServer(struct session *thisSession, int ftPort)
 	/*Print to console*/
 	listening(ftPort);
 
-	cout << "insided startServer" << endl;
+	cout << "DEBUG----insided startServer" << endl;
 }
 /******************************************************
 #   startNewConnection
@@ -265,7 +260,7 @@ void startServer(struct session *thisSession, int ftPort)
 void startNewConnection(struct session *thisSession)
 {
 
-	cout << "Inside start new connection" << endl;
+	cout << "DEBUG----Inside start new connection" << endl;
 	char clientName[1024];
 	char service[20];
 
@@ -285,7 +280,7 @@ void startNewConnection(struct session *thisSession)
 		/*get name of client*/
 		getnameinfo((struct sockaddr *)&clientAddr, sizeof(clientAddr),clientName,sizeof(clientName), service, sizeof(service),0);
 
-		cout << "Connection from " << clientName << endl;
+		cout << "ftserver > received connection from " << clientName << endl;
 	}
 
 	/*Store client address in session data structure*/
@@ -303,7 +298,7 @@ void startNewConnection(struct session *thisSession)
 ******************************************************/
 bool handleRequest(struct session *thisSession)
 {
-	cout << "Inside handleRequest" << endl;
+	cout << "DEBUG----Inside handleRequest" << endl;
 	/*Get commands from connection*/
 	receiveAll(thisSession);
 
@@ -332,7 +327,7 @@ bool handleRequest(struct session *thisSession)
 ******************************************************/
 void setupDataConnection(struct session *thisSession)
 {
-	cout << "Inside setupDataConnection" << endl;
+	cout << "DEBUG----Inside setupDataConnection" << endl;
 
 	/*Save data port*/
 	int port = thisSession->dataPort;
@@ -378,14 +373,28 @@ void closeDataSocket(struct session *thisSession)
 }
 void respondToRequest(struct session *thisSession)
 {
-	cout << "Inside respondToRequest" << endl;
+	cout << "DEBUG----Inside respondToRequest" << endl;
 
 	if(thisSession->type==INVALID){
 		/*Send error message on control socket*/
 		sendError(thisSession);
 
 		return;
+	}
 
+	/*Find if file exists in*/
+	if(thisSession->type == GET){
+
+		/*Was file found in directory*/
+		bool fileFound=fileinDir(thisSession);
+
+		if(!fileFound){
+			/**/
+			sendFileError(thisSession);
+			/**/
+			return;
+		
+		}
 	}
 
 	/*Since no error send OK on connection P*/
@@ -403,6 +412,7 @@ void respondToRequest(struct session *thisSession)
 
 
 	if(thisSession->type==GET){
+
 		sendFile(thisSession);
 
 		return;
@@ -422,10 +432,11 @@ void respondToRequest(struct session *thisSession)
 ******************************************************/
 void receiveAll(struct session *thisSession){
 
-	cout << "Inside receiveAll" << endl;
+	cout << "DEBUG----Inside receiveAll" << endl;
 
 	/*Clear the buffer*/
 	bzero(thisSession->msgBuffer, MAX_PACKET);
+
 	/*Variable to keep track of bytes read*/
 	int bytesRead=0;
 
@@ -451,7 +462,7 @@ void receiveAll(struct session *thisSession){
 /*Repurposed this function from a CS344 function */
 void parseMessage(struct session *thisSession)
 {
-	cout << "Inside parseMessage" << endl;
+	cout << "DEBUG----Inside parseMessage" << endl;
 
 	char *buf=thisSession->msgBuffer;
 	char **comms=thisSession->commands;
@@ -491,70 +502,97 @@ void parseMessage(struct session *thisSession)
 void identifyCommands(struct session *thisSession)
 {
 	/**/
-	cout << "Inside identifyCommands" << endl;
+	cout << "DEBUG----Inside identifyCommands" << endl;
 	char const *list="-l";
 	int listLen=(unsigned)strlen(list);
 	char const *get="-g";
 
-	/*Make copy of command */
-	int cmLen=(unsigned)strlen(thisSession->msgBuffer);
+	
+	/*Get length of first command*/
+	int firstCommLen  = strlen(thisSession->commands[0]);
 
-	char comms[cmLen];
-
-	strcpy(comms, thisSession->msgBuffer);
-
+	
 	if(thisSession->numCommands>3){
-		cout << "Too many commands" << endl;
+		cout << "DEBUG----Too many commands" << endl;
 		thisSession->type=INVALID;
 	}
-	/*List directory*/
-	if(thisSession->numCommands==2){
 
-		/*Compare 1st command to -l */
-		if(strncmp(comms, list, listLen)==0){
-			cout << "Requesting list" << endl;
+	/*List directory*/
+	if(thisSession->numCommands==2){ /*Compare 1st command to -l */
+
+		/*equal length commands*/
+		if (firstCommLen == listLen) {
+
+			/*Ensure the strings are identical*/
+			if(strncmp(thisSession->commands[0], list, listLen)==0){
+				
+				cout << "DEBUG----Requesting list" << endl;
+
+				/*Set command type*/
+				thisSession->type=LIST;
+
+				/*Convert 2nd command to int*/
+				int data=atoi(thisSession->commands[1]);
+		
+				/*Store port in struct*/
+				thisSession->dataPort=data
+				
+				/*Print console message*/
+				cout << "ftserver > List directory requested on port "<< thisSession->dataPort<< endl;
+
+			}
+			else{
+				/*Commands not identical in chars*/
+				thisSession->type=INVALID;
+			}
 		}
 		else{
+			/*Commands not identical in length*/
 			thisSession->type=INVALID;
 		}
 
-		/*Convert 2nd command to int*/
-		int data=atoi(thisSession->commands[1]);
 		
-		/*Store it in struct*/
-		thisSession->dataPort=data;
-
-		/*Set command type*/
-		thisSession->type=LIST;
-
-		/*Print console message*/
-		cout << "ftserver > List directory requested on port "<< thisSession->dataPort<< endl;
 	}
 
-	if(thisSession->numCommands==3){
+	/*Get File*/
+	if(thisSession->numCommands==3){ /*Compare 1st command to -g */
 
-		/*Compare 1st command to -g*/
-		if(strncmp(comms,get,listLen)==0){
-			cout << "Requesting file" << endl;
-		}
+		/*equal length commands*/
+		if(firstCommLen == listLen){
+
+			/*Ensure strings are identical*/
+			if(strncmp(comms,get,listLen)==0){
+
+				cout << "DEBUG----Requesting file" << endl;
+
+				
+				/*Set command type*/
+				thisSession->type=GET;
+
+				/*Store filename in data structure*/
+				thisSession->fileName=thisSession->commands[1];
+				
+				/*Convert 3rd command to int*/
+				int data=atoi(thisSession->commands[2]);
+
+				/*Store in struct*/
+				thisSession->dataPort=data;			
+
+				/*Print to console*/
+				cout << "ftserver > file " << thisSession->fileName << " requested on port " << thisSession->dataPort << endl;
+			}
+			else{
+				/*commands not identical in chars*/
+				thisSession->type=INVALID;
+			}
+
+		}		
 		else{
+			/*Commands not identical in length*/
 			thisSession->type=INVALID;
 		}
 
-		/*Store filename in data structure*/
-		thisSession->fileName=thisSession->commands[1];
 		
-		/*Convert 3rd command to int*/
-		int data=atoi(thisSession->commands[2]);
-
-		/*Store in struct*/
-		thisSession->dataPort=data;
-
-		/*Set command type*/
-		thisSession->type=GET;
-
-
-		cout << "ftserver > File " << thisSession->fileName << " requested on port " << thisSession->dataPort << endl;
 
 	}
 }
@@ -564,7 +602,7 @@ void identifyCommands(struct session *thisSession)
 ******************************************************/
 void listening(int port)
 {
-	cout << "ftserver > Port #" << port << ": ftserver is now listing for incoming connections.\n" << endl;
+	cout << "ftserver > now listening for incoming connections on port #" << port << "." << endl;
 }
 
 
@@ -599,7 +637,7 @@ void sigHandler(int n)
 ******************************************************/
 string getDirectoryContents()
 {
-	cout << "Inside getDirectoryContents" << endl;
+	cout << "DEBUG----Inside getDirectoryContents" << endl;
 	/*directory pointer*/
 	DIR *dirPointer;
 	struct dirent *curDir;
@@ -655,6 +693,7 @@ void sendDirectory(struct session *thisSession)
 	/*Send string to client*/
 	bytesSent=send(thisSession->dataSocket, dirCont, len, 0);
 
+	/*Ensure send worked*/
 	if(bytesSent==-1){
 		/*Error*/
 		cout << "Error: unable to send directory contents" << endl;
@@ -664,7 +703,6 @@ void sendDirectory(struct session *thisSession)
 	}
 
 	/*Close data socket*/
-
 	closeDataSocket(thisSession);
 
 }
@@ -677,33 +715,12 @@ void sendDirectory(struct session *thisSession)
 void sendFile(struct session *thisSession){
 
 	/*Variables with messages to send*/
-
+	/*File descriptor for reading file*/
 	FILE *fileFD;
 	int result;
 
+	/*buffer to store file contents*/
 	char buffer[MAX_PACKET*2];
-
-
-
-	bool fileFound=fileinDir(thisSession);
-
-	if(!fileFound){
-
-		cout << "ftserver > file requested by client not found." << endl;
-
-		string notFound="FILE NOT FOUND";
-		int len=notFound.length();
-
-		const void *errMsg=notFound.c_str();
-
-		result = send(thisSession->dataSocket, errMsg, len, 0);
-		if(result<0){
-			cout << "Error: unable to send error message to client." << endl;
-		}
-
-		return;
-
-	}
 
 	/*Send file to client*/	
 
@@ -718,6 +735,7 @@ void sendFile(struct session *thisSession){
 
 		result=send(thisSession->dataSocket, buffer, strlen(buffer),0);
 
+		/*Ensure send worked*/
 		if(result<0){
 			cout << "Error: unable to send file data to client."<<endl;
 		}
@@ -726,10 +744,10 @@ void sendFile(struct session *thisSession){
 		}
 
 		/*Wait before sending next data */
-
 		usleep(10);
 	}
 
+	/*Close the file*/
 	fclose(fileFD);
 
 	/*Close data socket*/
@@ -743,16 +761,22 @@ bool fileinDir(struct session *thisSession)
 	DIR *dirPointer;
 	struct dirent *curDir;
 
+	/*Open directory*/
 	dirPointer=opendir(".");
 
 
 	/*Loop through files in directory*/
 	while((curDir=readdir(dirPointer))){
 
+		/*Length of file name*/
 		int len=thisSession->fileName.length();
 
+		/*Length of file in directory*/
+		int dirFileLen=strlen(curDir->d_name);
+
+
 		/*Return true if match*/
-		if(strncmp(curDir->d_name, thisSession->fileName.c_str(),len)==0){
+		if(strncmp(curDir->d_name, thisSession->fileName.c_str(),dirFileLen)==0){
 			return true;
 		}
 	}
@@ -775,14 +799,16 @@ void sendError( struct session *thisSession)
 	/*Send on control connection*/
 	if(thisSession->type==INVALID){
 
+		/*Print to console*/
 		cout << "ftserver > received invalid command from client." << endl;
 
 		/*Convert string to c string*/
 		const void * errMsg = thisSession->message.c_str();
 
+		/*Send message over control socket*/
 		result=send(thisSession->controlSocket, errMsg, length,0);
 
-		/*Ensure it worked*/
+		/*Ensure send worked*/
 		if(result<0){
 			cout << "Error: unable to send error message to client." << endl;
 		}
@@ -791,6 +817,27 @@ void sendError( struct session *thisSession)
 
 }
 
+void sendFileError(struct session *thisSession)
+{
+	/*Print to console*/
+	cout << "ftserver > file requested by client not found." << endl;
+
+	string notFound="FILE NOT FOUND";
+	int len=notFound.length();
+	int result;
+
+	/*convert string to c_string*/
+	const void *errMsg=notFound.c_str();
+	
+	/*send over control socket*/
+	result = send(thisSession->controlSocket, errMsg, len, 0);
+
+	/*Ensure send worked*/
+	if(result<0){
+		cout << "Error: unable to send error message to client." << endl;
+	}		
+
+}
 void sendOK(struct session *thisSession)
 {
 	string msg="OK";
