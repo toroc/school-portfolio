@@ -15,8 +15,13 @@
 #  
 #  
 #   References:
-#    Socket Programming, Section 2.7 from Computer Networking, A Top-Down Approach (6th Edition)
-#   
+#   Socket Programming, Section 2.7 from Computer Networking, A Top-Down Approach (6th Edition)
+#   Python Central: Check if a file exists in a directory with Python 
+#       http://pythoncentral.io/check-file-exists-in-directory-python/  
+#   Stackoverflow: Detect socket hangup without sending or receiving?
+#       http://stackoverflow.com/questions/5686490/detect-socket-hangup-without-sending-or-receiving
+#   Tutorialspoint: Python Files I/O   
+#        http://www.tutorialspoint.com/python/python_files_io.htm
 #------------------------------------------------------------
 from socket import *
 import sys
@@ -39,20 +44,13 @@ def connectSocket(sock, name, port):
     sock.connect((name, port))
 
 
-def listenSocket(sock, port):
-    """Bind dataSocket to port."""
-    # Get local name
-   
-    # Bind to the port     
-    sock.bind(("", port))
-
-    print("Waiting for server response on port "+str(port)+"\n")
-
-    sock.listen(1)
-
 def acceptSocket(sock):
-
+    """Accept a connected socket."""
     sock.accept()
+
+def closeSocket(sock):
+    """Close socket connection."""
+    sock.close()
 
 
 def getMessage(sock): 
@@ -66,7 +64,7 @@ def sendMessage(sock, msg):
 
 
 def receiveMessage(sock):
-
+    """Receive message."""
     message = recvAll(sock)
 
     return message
@@ -80,7 +78,7 @@ def receiveMessage(sock):
 
 def startControlConnection(serverName, serverPort):
 
-    print("inside startControlConnection")
+    print("DEBUG--inside startControlConnection")
 
     # Create client socket of type SOCK_STREAM
     clientSocket=createSocket()
@@ -95,15 +93,12 @@ def startControlConnection(serverName, serverPort):
 
 def startDataSocket(dataPort):
 
-    print("inside startDataSocket")
+    print("DEBUG--inside startDataSocket")
     # Create server like socket of type SOCK_STREAM
     dataSocket=createSocket()
 
     # Bind to the data port
     dataSocket.bind(('', dataPort))
-
-
-
 
     # Returm data connection
     return dataSocket
@@ -112,7 +107,7 @@ def startDataSocket(dataPort):
 def handleControl(sock, servName, servPort, command, file, dataPort):
     # Print to console
 
-    print("inside handleControl")
+    print("DEBUG--inside handleControl")
     printControlMsg(servName, servPort)
 
     printReq()
@@ -123,6 +118,7 @@ def handleControl(sock, servName, servPort, command, file, dataPort):
     # Send command to server via control socket
     sendMessage(sock, msg)
 
+    # get reply from server
     msg=getReply(sock)
 
     # validate reply
@@ -130,9 +126,10 @@ def handleControl(sock, servName, servPort, command, file, dataPort):
 
 
 def validateControl(msg):
+    """Validate control message from server."""
 
     if(msg == "OK"):
-        print("Message received by server")
+        print("DEBUG--Message received by server")
     else:
         # Error message
         print(msg)
@@ -140,34 +137,105 @@ def validateControl(msg):
 
 def handleData(dataPort, cType, serverName, filename):
 
-    print("inside handleData")
+    print("DEBUG--inside handleData")
     # Create data connection
     dataSocket = startDataSocket(dataPort)
 
     # Listen for incoming connection
     dataSocket.listen(1)
 
-    print("Data socket is ready to receive")
+    print("DEBUG--Data socket is ready to receive")
 
     while 1:
-        print("inside the while")
+        print("DEBUG--inside the while")
         connectionSocket, addr = dataSocket.accept()
-        print("after the accept")
+        print("DEBUG--after the accept")
          # Print to console
          if(cType==1):
             receiveDirMsg(serverName, dataPort)
             message = connectionSocket.recv(1024)
             printDirContents(message)
+            transComplete()
             break
 
         if(cType==2):
+            # console message
             receiveFileMsg(serverName, fileName, dataPort)
             # receive greater quantity
+            receiveFile(dataSocket, fileName)
+            transComplete()
+            break
 
-            # handle saving file
 
 
    # close connection
+
+
+def receiveFile(sock, filename):
+
+    # Array to 
+    fileContents = []
+    data =''
+
+
+    # Reference: stackoverflow
+    while True:
+        # receive 1024 bytes at a time
+        data= sock.recv(1024)
+        # append data received to fileContents
+        fileContents.append(data)
+
+        # connection closed by server
+        if len(data) == 0:
+            break
+
+    # Call function to save file
+    saveFile(fileContents, filename)
+
+
+
+
+def saveFile(fileContents, filename):
+
+    # Figure out whether duplicate file
+    filename = findDuplicate()
+
+    # Create file and open for write
+    file = open(filename, "w")
+
+    # Save contents to file
+    file.write(fileContents)
+
+    # close file
+    file.close()
+
+
+
+
+
+
+
+def findDuplicate(filename):
+
+    # Check for duplicate file name
+    fileRequested = filename
+    fileVersion = 1
+
+    # true when file exists
+    while os.path.isfile(filename): #Reference: Python Central
+
+        # Change the file name
+        filename = fileRequested + str(fileVersion)
+
+        # increment version incase it already exists
+        fileVersion += 1
+
+        # console message
+        if fileVersion > 1:
+            duplicateFile()
+
+    return filename
+
 
 
 #------------------------------------------------------------
@@ -178,6 +246,10 @@ def printControlMsg(name, control):
     """Print to console message re control socket."""
     print("ftclient > control connection established with server "+ name + " on port "+ str(control)+"\n")
   
+
+def duplicateFile():
+
+    print("ftclient > duplicate file name.")
 
 def printReq():
 
@@ -211,7 +283,9 @@ def printDirContents(msg):
     print(msg)
 
 
+def transComplete():
 
+    print("ftclient > transfer is complete.")
 
 
 
@@ -279,6 +353,9 @@ def main():
 
     # Start data connection
     handleData(dataPort, cType, serverName, fileName)
+
+    # close control connection
+    closeSocket(controlSocket)
 
 
 
