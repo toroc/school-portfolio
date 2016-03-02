@@ -37,32 +37,24 @@ app.get('/', function(req, res, next){
 	var context = {};
 
 	/*Request user authentication*/
-	request('https://login.live.com/oauth20_authorize.srf?client_id='+credentials.mID+'&scope='+credentials.mScope+'&response_type=code&redirect_uri='+credentials.mRedirect+'&display=popup', handleLogin)
+	request('https://login.live.com/oauth20_authorize.srf?client_id='+credentials.mID+'&scope='+credentials.mScope+'&response_type=code&redirect_uri='+credentials.mRedirect+'&display=popup')
 
-	function handleLogin(err, response, body){
 
-		if(!err && response.statusCode < 400){
-			context.login = body;
-			console.log(body);
-			console.log(response);
-			/*Render*/
-			res.render('home', context);
-		}else{
-			console.log(err);
-			if(response){
-				console.log(response.statusCode);
-			}
-			next(err);
-		}
-	}
 });
 
 app.get('/callback', function(req, res, next){
+	var qParams=[];
+	for (var key in req.query){
+		qParams.push({'key' :key, 'value' :req.query[key]})
+	}
 
+	context.dataList=qParams;
 
-
+	res.render('callback', context);
 
 });
+
+
 app.use(function(req,res){
   res.status(404);
   res.render('404');
