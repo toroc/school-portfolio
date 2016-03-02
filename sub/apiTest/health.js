@@ -37,7 +37,7 @@ app.get('/', function(req, res, next){
 	var context = {};
 
 	/*Request user authentication*/
-	request('https://login.live.com/oauth20_authorize.srf?client_id='+credentials.mID+'&scope='+credentials.mScope+'&response_type=code&redirect_uri='+credentials.mRedirect, handleLogin)
+	request('https://login.live.com/oauth20_authorize.srf?client_id='+credentials.mID+'&scope='+credentials.mScope+'&response_type=code&redirect_uri='+credentials.mRedirect+'&display=popup', handleLogin)
 
 	function handleLogin(err, response, body){
 
@@ -57,6 +57,12 @@ app.get('/', function(req, res, next){
 	}
 });
 
+app.get('/callback', function(req, res, next){
+
+
+
+
+});
 app.use(function(req,res){
   res.status(404);
   res.render('404');
