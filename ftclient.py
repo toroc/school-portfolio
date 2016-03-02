@@ -125,14 +125,18 @@ def handleControl(sock, servName, servPort, command, file, dataPort):
     validateControl(msg)
 
 
+
 def validateControl(msg):
     """Validate control message from server."""
 
     if(msg == "OK"):
         print("DEBUG--Message received by server")
+        return True
     else:
         # Error message
         print(msg)
+        # exit since error receive
+        exit()
 
 
 def handleData(dataPort, cType, serverName, filename):
@@ -151,7 +155,8 @@ def handleData(dataPort, cType, serverName, filename):
         connectionSocket, addr = dataSocket.accept()
         print("DEBUG--after the accept")
          # Print to console
-         if(cType==1):
+        if(cType==1):
+            print("DEBUG--after the cType 1")
             receiveDirMsg(serverName, dataPort)
             message = connectionSocket.recv(1024)
             printDirContents(message)
@@ -159,10 +164,11 @@ def handleData(dataPort, cType, serverName, filename):
             break
 
         if(cType==2):
+            print("DEBUG--after cType 2")
             # console message
-            receiveFileMsg(serverName, fileName, dataPort)
-            # receive greater quantity
-            receiveFile(dataSocket, fileName)
+            receiveFileMsg(serverName, filename, dataPort)
+            # rPass connection socket to receive file
+            receiveFile(connectionSocket, filename)
             transComplete()
             break
 
@@ -182,6 +188,8 @@ def receiveFile(sock, filename):
     while True:
         # receive 1024 bytes at a time
         data= sock.recv(1024)
+
+
         # append data received to fileContents
         fileContents.append(data)
 
@@ -198,13 +206,13 @@ def receiveFile(sock, filename):
 def saveFile(fileContents, filename):
 
     # Figure out whether duplicate file
-    filename = findDuplicate()
+    filename = findDuplicate(filename)
 
     # Create file and open for write
     file = open(filename, "w")
 
     # Save contents to file
-    file.write(fileContents)
+    file.write(str(fileContents))
 
     # close file
     file.close()
@@ -257,11 +265,11 @@ def printReq():
 
 def receiveDirMsg(server, data):
     """Print message to console."""
-    print("Receiving directory structure from " +server+":"+str(data)+"\n")
+    print("ftclient > receiving directory structure from " +server+" on port "+str(data)+".")
 
 def receiveFileMsg(server, file, data):
     """."""
-    print("Receiving "+file+" from "+server+":"+data+"\n")
+    print("ftclient > receiving "+file+" from "+server+" on port "+str(data)+".")
 
 
 def commandType(command):
@@ -269,11 +277,11 @@ def commandType(command):
 
     if command[1]=="l":
         print("Requesting list\n")
-        return 2
+        return 1
     
     if command[1]=="g":
         print("Getting file")
-        return 1
+        return 2
     
     #wrong command 
     return -1 
@@ -287,7 +295,9 @@ def transComplete():
 
     print("ftclient > transfer is complete.")
 
+def errNofile(msg):
 
+    print("ftclient > ")
 
 
 def printMessage(message):
@@ -335,7 +345,11 @@ def main():
     serverName = str(sys.argv[1])
     serverPort = int(sys.argv[2])
     command=str(sys.argv[3])
-    dataPort=int(sys.argv[4])
+
+    dataPort = 0
+    if(len(sys.argv)==5):
+        dataPort=int(sys.argv[4])
+
     fileName=""
 
     if(len(sys.argv)==6):
