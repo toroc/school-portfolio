@@ -1,0 +1,8 @@
+<h1>{{username}}</h1>
+
+{{each repos}}
+<p>
+	<a href="{{$value.url}}">{{$value.name}}</a></br>
+	{{$value.description}}
+</p>
+{{/each}}
