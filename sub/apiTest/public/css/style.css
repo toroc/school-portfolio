@@ -4,3 +4,11 @@ pre{
 	padding: 10px;
 	overflow-x: scroll;
 }
+
+#explore {
+  text-align: center;
+  width:500px;
+  height: 70px;
+  font-size:3.5em;
+  border-radius:8px;
+}

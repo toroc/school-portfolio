@@ -1,0 +1,36 @@
+<form method="GET" action="/search">
+	<fieldset>
+	<legend>Explore</legend>
+		<label for="cityName">City Name, State</label>
+		<input type="text" name="cityName" id="locationName">
+		<label for="radius"> Radius:</label>
+		<input type="number" name="radius" id="radius">
+		<input type="submit" id="submit">
+	</fieldset>
+</form>
+
+<script src="/js/explore.js"></script>
+<table id="formdata">
+	<thead>
+		<tr>
+			<th>Name</th>
+			<th>Value</th>
+		</tr>
+	</thead>
+	<tbody>
+		{{#each dataList}}
+		<tr>
+			
+			<td>{{this.name}}
+			<td>{{this.value}}
+			
+		</tr>{{/each}}
+	</tbody>
+</table>
+
+<h1>Response from Foursquare :</h1>
+<pre class="prettyprint">
+<code class="prettyprint">
+{{results}}
+</code>
+</pre>
