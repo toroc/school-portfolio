@@ -31,6 +31,7 @@ app.use(express.static('public'));
 #   Routes
 ******************************************************/
 
+/*Render the default routes*/
 app.get('/', function(req, res, next){
 	res.render('index');
 });
@@ -40,15 +41,32 @@ app.get('/getting-started', function(req, res, next){
 	res.render('getting-started');
 });
 
-app.get('/profile', function(req, res, next){
-	res.render('profile');
+
+app.get('/user', function(req, res, next){
+	res.render('user');
+});
+app.get('/user-badges', function(req, res, next){
+  res.render('user-badges');
+});
+app.get('/user-friends', function(req, res, next){
+  res.render('user-friends');
 });
 
-app.get('/users', function(req, res, next){
-	res.render('users');
-});
+
 app.get('/search', function(req, res, next){
   res.render('search');
+});
+
+app.get('/venues', function(req, res, next){
+  res.render('venues');
+});
+
+app.get('/venues-search', function(req, res, next){
+  res.render('venues-search');
+});
+
+app.get('/venues-explore', function(req, res, next){
+  res.render('venues-explore');
 });
 
 
