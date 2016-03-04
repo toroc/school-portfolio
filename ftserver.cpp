@@ -329,8 +329,6 @@ void setupDataConnection(struct session *thisSession)
 {
 	cout << "DEBUG----Inside setupDataConnection" << endl;
 
-	/*Save data port*/
-	int port = thisSession->dataPort;
 
 	/*Get the client's address*/
 	struct sockaddr_in cl_address;
@@ -535,7 +533,7 @@ void identifyCommands(struct session *thisSession)
 				int data=atoi(thisSession->commands[1]);
 		
 				/*Store port in struct*/
-				thisSession->dataPort=data
+				thisSession->dataPort=data;
 				
 				/*Print console message*/
 				cout << "ftserver > List directory requested on port "<< thisSession->dataPort<< endl;
@@ -561,7 +559,7 @@ void identifyCommands(struct session *thisSession)
 		if(firstCommLen == listLen){
 
 			/*Ensure strings are identical*/
-			if(strncmp(comms,get,listLen)==0){
+			if(strncmp(thisSession->commands[0],get,listLen)==0){
 
 				cout << "DEBUG----Requesting file" << endl;
 
@@ -654,7 +652,7 @@ string getDirectoryContents()
 	}
 
 	/*Loop thru files in directory*/
-	while(curDir=readdir(dirPointer)){
+	while((curDir=readdir(dirPointer))){
 
 		/*Append file name string*/
 		dirContents+=curDir->d_name;
@@ -767,9 +765,6 @@ bool fileinDir(struct session *thisSession)
 
 	/*Loop through files in directory*/
 	while((curDir=readdir(dirPointer))){
-
-		/*Length of file name*/
-		int len=thisSession->fileName.length();
 
 		/*Length of file in directory*/
 		int dirFileLen=strlen(curDir->d_name);
