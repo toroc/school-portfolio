@@ -54,6 +54,7 @@ struct session{
 	int commValid; /*0=false, 1=true*/
 	string fileName;
 	int dataPort;
+	int controlPort;
 	/*Socket file descriptors*/
 	int serverSocket; /*Used for listening*/
 	int controlSocket; /*Used for connecting with client*/
@@ -77,7 +78,7 @@ void setupDataConnection(struct session *thisSession);
 void respondToRequest(struct session *thisSession);
 
 void closeDataSocket(struct session *thisSession);
-
+void closeControlSocket(struct session *thisSession);
 
 /*Connection helper functions*/
 
@@ -100,7 +101,6 @@ void sendFile(struct session *thisSession);
 void sendError( struct session *thisSession);
 void sendFileError(struct session *thisSession);
 void readSocket(struct session *thisSession);
-void socketSend();
 void sendOK(struct session *thisSession);
 
 int main(int argc, char *argv[])
@@ -127,6 +127,7 @@ int main(int argc, char *argv[])
 		
 		/*Handle client requests*/
 		handleRequest(curSession);
+		
 					
 	}
 
@@ -248,8 +249,8 @@ void startServer(struct session *thisSession, int ftPort)
 	/*Listen for incoming connections*/
 	listen(thisSession->serverSocket, 1);
 
-	/*Print to console*/
-	listening(ftPort);
+	/*save control port*/
+	thisSession->controlPort = ftPort;
 
 	cout << "DEBUG----insided startServer" << endl;
 }
@@ -263,6 +264,10 @@ void startNewConnection(struct session *thisSession)
 {
 
 	cout << "DEBUG----Inside start new connection" << endl;
+
+	/*Print to console*/
+	listening(thisSession->controlPort);
+
 	char clientName[1024];
 	char service[20];
 
@@ -313,9 +318,6 @@ bool handleRequest(struct session *thisSession)
 	/*Respond to client request*/
 	respondToRequest(thisSession);
 
-	/*Close Connections*/
-
-
 	/*To indicate completion*/
 	return false;
 }
@@ -331,7 +333,6 @@ void setupDataConnection(struct session *thisSession)
 {
 	cout << "DEBUG----Inside setupDataConnection" << endl;
 
-
 	/*Get the client's address*/
 	struct sockaddr_in cl_address;
 
@@ -343,26 +344,47 @@ void setupDataConnection(struct session *thisSession)
 		cout << "Error: unable to get peer's address." << endl;
 	}
 
+	/*Create data socket*/
+	thisSession->dataSocket=socket(AF_INET, SOCK_STREAM,0);
+
+	if(thisSession->dataSocket == -1){
+		cout << "Error: unable to create data socket." << endl;
+	}
 
 	/*Change port to the data port */
 	cl_address.sin_port = htons(thisSession->dataPort);
 
+	socklen_t len2=sizeof(cl_address);
+	
+	/*Continously attempt to connect*/
+	do {
+		/*Attempt to connect with peer over data socket*/
+		result = connect(thisSession->dataSocket, (struct sockaddr*)&cl_address, len2);
+	} while (result == -1);
+	
+	
+}
+/******************************************************
+#   funcName
+#   @desc:
+#   @param:
+#   @return:
+******************************************************/
+void closeControlSocket(struct session *thisSession)
+{
+	int result = close(thisSession->controlSocket);
 
-	/*Create data socket*/
-	thisSession->dataSocket=socket(AF_INET, SOCK_STREAM,0);
-
-	/*Attempt to connect with peer over different socket*/
-	result = connect(thisSession->dataSocket, (struct sockaddr*)&cl_address, sizeof(cl_address));
-
-
-	/*Ensure it worked*/
-	if (result <0){
-		/*error*/
-		cout << "Error: unable to create data connection." << endl;
+	if (result == -1){
+		cout << "Error: unable to close control socket." << endl;
 	}
-
 }
 
+/******************************************************
+#   funcName
+#   @desc:
+#   @param:
+#   @return:
+******************************************************/
 void closeDataSocket(struct session *thisSession)
 {
 	int result = close(thisSession->dataSocket);
@@ -371,6 +393,12 @@ void closeDataSocket(struct session *thisSession)
 		cout << "Error: unable to close data socket." << endl;
 	}
 }
+/******************************************************
+#   funcName
+#   @desc:
+#   @param:
+#   @return:
+******************************************************/
 void respondToRequest(struct session *thisSession)
 {
 	cout << "DEBUG----Inside respondToRequest" << endl;
@@ -754,7 +782,12 @@ void sendFile(struct session *thisSession){
 	closeDataSocket(thisSession);
 
 }
-
+/******************************************************
+#   funcName
+#   @desc:
+#   @param:
+#   @return:
+******************************************************/
 bool fileinDir(struct session *thisSession)
 {
 	/*directory pointer*/
@@ -782,6 +815,13 @@ bool fileinDir(struct session *thisSession)
 
 	return false;
 }
+
+/******************************************************
+#   funcName
+#   @desc:
+#   @param:
+#   @return:
+******************************************************/
 void sendError( struct session *thisSession)
 {
 	/**/
@@ -813,7 +853,12 @@ void sendError( struct session *thisSession)
 	}
 
 }
-
+/******************************************************
+#   funcName
+#   @desc:
+#   @param:
+#   @return:
+******************************************************/
 void sendFileError(struct session *thisSession)
 {
 	/*Print to console*/
@@ -835,6 +880,13 @@ void sendFileError(struct session *thisSession)
 	}		
 
 }
+
+/******************************************************
+#   funcName
+#   @desc:
+#   @param:
+#   @return:
+******************************************************/
 void sendOK(struct session *thisSession)
 {
 	string msg="OK";
