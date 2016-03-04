@@ -99,8 +99,16 @@ def sendMessage(sock, msg):
     # Send the message
     sock.sendall(msg)
 
+# Reference: https://utcc.utoronto.ca/~cks/space/blog/python/TcpKeepalivesInPython
+def setkeepalives(sock):
 
-
+    # Keep alive
+    sock.setsockopt(SOL_SOCKET, SO_KEEPALIVE, 1)
+    sock.setsockopt(SOL_TCP, TCP_KEEPIDLE, 60)
+    # overrides value shown by sysctl net.ipv4.tcp_keepalive_probes
+    sock.setsockopt(SOL_TCP, TCP_KEEPCNT, 4)
+    # overrides value shown by sysctl net.ipv4.tcp_keepalive_intvl
+    sock.setsockopt(SOL_TCP, TCP_KEEPINTVL, 15)
 
 #------------------------------------------------------------
 #  Functions to carry out program proccesses to send
@@ -167,8 +175,7 @@ def validateControl(msg):
         return True
     else:
         # Error message
-        print(errNofile)
-        print(msg)
+        errMsg(msg)
         # exit since error receive
         exit()
 
@@ -183,6 +190,8 @@ def handleData(dataPort, cType, serverName, filename):
     dataSocket.listen(1)
 
     print("DEBUG--Data socket is ready to receive")
+
+    setkeepalives(dataSocket)
 
     while 1:
         print("DEBUG--inside the while")
@@ -268,15 +277,16 @@ def findDuplicate(filename):
     # true when file exists
     while os.path.isfile(filename): #Reference: Python Central
 
+        # console message
+        duplicateFile(filename)
+
         # Change the file name
-        filename = fileRequested + str(fileVersion)
+        filename = str(fileVersion) + "_" + fileRequested 
 
         # increment version incase it already exists
         fileVersion += 1
 
-        # console message
-        if fileVersion > 1:
-            duplicateFile()
+        
 
     return filename
 
@@ -291,9 +301,9 @@ def printControlMsg(name, control):
     print("ftclient > control connection established with server "+ name + " on port "+ str(control)+"\n")
   
 
-def duplicateFile():
+def duplicateFile(fname):
     """ ."""
-    print("ftclient > duplicate file name.")
+    print("ftclient > duplicate file name for file: "+fname)
 
 def printReq():
     """ ."""
@@ -331,9 +341,9 @@ def transComplete():
 
     print("ftclient > transfer is complete.")
 
-def errNofile(msg):
+def errMsg(msg):
 
-    print("ftclient > ")
+    print("ftclient > received following message from ftserver: "+msg)
 
 
 
