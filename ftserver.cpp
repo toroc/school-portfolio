@@ -206,9 +206,9 @@ void intro()
 ******************************************************/
 /******************************************************
 #   startServer
-#   @desc:
-#   @param: n/a
-#   @return:
+#   @desc: 
+#   @param: pointer to data structure session, and port
+#   @return: void
 ******************************************************/
 void startServer(struct session *thisSession, int ftPort)
 {
