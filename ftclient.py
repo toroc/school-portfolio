@@ -29,13 +29,52 @@ import os
 import argparse
 
 
+
+def main():
+    """ ."""
+    # ensure user called program with valid args
+    validateCommandLine()
+
+    #save arguments passed into program
+    serverName = str(sys.argv[1])
+    serverPort = int(sys.argv[2])
+    command=str(sys.argv[3])
+
+    dataPort = 0
+    if(len(sys.argv)==5):
+        dataPort=int(sys.argv[4])
+
+    fileName=""
+
+    if(len(sys.argv)==6):
+        dataPort=int(sys.argv[5])
+        fileName=str(sys.argv[4]);
+    
+    # Figure out command type
+    cType=commandType(command)
+
+    # Create control connection to server SOCK_STREAM
+    controlSocket = startControlConnection(serverName, serverPort)
+
+    # Send command to server
+    handleControl(controlSocket, serverName, serverPort, command, fileName, dataPort)
+
+    # Start data connection
+    handleData(dataPort, cType, serverName, fileName)
+
+    # close control connection
+    closeSocket(controlSocket)
+
+
+
 #------------------------------------------------------------
 #   Helper functions to carry out socket connection processes of
-#       initializing, connecting, sending, and receiving
+#       initializing socket, connecting to another socket, 
+#       accepting an incoming connection, and closing a socket
 #------------------------------------------------------------
 
 def createSocket():
-    """Return a socket initialization."""
+    """Return a socket initialized."""
     return socket(AF_INET, SOCK_STREAM)
 
 
@@ -48,36 +87,28 @@ def acceptSocket(sock):
     """Accept a connected socket."""
     sock.accept()
 
+
 def closeSocket(sock):
     """Close socket connection."""
     sock.close()
 
 
-def getMessage(sock): 
-    msg = getReply(sock)
-
-    print(msg.decode())
 
 def sendMessage(sock, msg):
+    """ ."""
     # Send the message
     sock.sendall(msg)
 
 
-def receiveMessage(sock):
-    """Receive message."""
-    message = recvAll(sock)
-
-    return message
-
 
 
 #------------------------------------------------------------
-#  Helper Functions to carry out socket connection processes of
+#  Functions to carry out program proccesses to send
 #       initializing, connecting, sending, and receiving
 #------------------------------------------------------------
 
 def startControlConnection(serverName, serverPort):
-
+    """ ."""
     print("DEBUG--inside startControlConnection")
 
     # Create client socket of type SOCK_STREAM
@@ -92,6 +123,7 @@ def startControlConnection(serverName, serverPort):
 
 
 def startDataSocket(dataPort):
+    """ ."""
 
     print("DEBUG--inside startDataSocket")
     # Create server like socket of type SOCK_STREAM
@@ -105,6 +137,7 @@ def startDataSocket(dataPort):
 
 
 def handleControl(sock, servName, servPort, command, file, dataPort):
+    """ ."""
     # Print to console
 
     print("DEBUG--inside handleControl")
@@ -134,13 +167,14 @@ def validateControl(msg):
         return True
     else:
         # Error message
+        print(errNofile)
         print(msg)
         # exit since error receive
         exit()
 
 
 def handleData(dataPort, cType, serverName, filename):
-
+    """ ."""
     print("DEBUG--inside handleData")
     # Create data connection
     dataSocket = startDataSocket(dataPort)
@@ -178,8 +212,8 @@ def handleData(dataPort, cType, serverName, filename):
 
 
 def receiveFile(sock, filename):
-
-    # Array to 
+    """ ."""
+    # Create list to store file contents
     fileContents = []
     data =''
 
@@ -204,16 +238,18 @@ def receiveFile(sock, filename):
 
 
 def saveFile(fileContents, filename):
-
+    """ ."""
     # Figure out whether duplicate file
     filename = findDuplicate(filename)
 
     # Create file and open for write
     file = open(filename, "w")
 
-    # Save contents to file
-    file.write(str(fileContents))
+    # Write one line at a time
+    for line in fileContents:
+        print >> file, line
 
+    # try pickle pickle.dump(x, f)
     # close file
     file.close()
 
@@ -224,7 +260,7 @@ def saveFile(fileContents, filename):
 
 
 def findDuplicate(filename):
-
+    """ ."""
     # Check for duplicate file name
     fileRequested = filename
     fileVersion = 1
@@ -256,11 +292,11 @@ def printControlMsg(name, control):
   
 
 def duplicateFile():
-
+    """ ."""
     print("ftclient > duplicate file name.")
 
 def printReq():
-
+    """ ."""
     print("ftclient > sending request to server. ")
 
 def receiveDirMsg(server, data):
@@ -300,9 +336,6 @@ def errNofile(msg):
     print("ftclient > ")
 
 
-def printMessage(message):
-    print(message.encode)
-
 
 def commandMsg(comm, port,file):
     """Return stylized string of command message"""
@@ -321,55 +354,25 @@ def getReply(sock):
     return sock.recv(1024)
 
 #------------------------------------------------------------
-#   Function to parse the various arguments the program needs
+#   Helper function to validate the various arguments the program needs
 #       to be able to run
 #------------------------------------------------------------
 def validateCommandLine():
-
+    """ Ensure user passed correct commands to run program."""
     # Too few arguments
     if len(sys.argv)<5:
         print("Usage: python ftclient.py <SERVER_HOST> <SERVER_PORT> <COMMAND> [<FILENAME>] <DATA_PORT>")
+        # exit
+        exit()
 
     # Missing file name, for get command
     if sys.argv[3] == "-g":
         if(len(sys.argv)<6):
             print("Usage: python ftclient.py <SERVER_HOST> <SERVER_PORT> <COMMAND> <FILENAME> <DATA_PORT>")
+            # exit
+            exit()
  
 
-
-def main():
-    
-    validateCommandLine()
-
-    #save arguments passed into program
-    serverName = str(sys.argv[1])
-    serverPort = int(sys.argv[2])
-    command=str(sys.argv[3])
-
-    dataPort = 0
-    if(len(sys.argv)==5):
-        dataPort=int(sys.argv[4])
-
-    fileName=""
-
-    if(len(sys.argv)==6):
-        dataPort=int(sys.argv[5])
-        fileName=str(sys.argv[4]);
-    
-    # DEBUG: Figure out command type
-    cType=commandType(command)
-
-    # Create control connection to server SOCK_STREAM
-    controlSocket = startControlConnection(serverName, serverPort)
-
-    # Send command to server
-    handleControl(controlSocket, serverName, serverPort, command, fileName, dataPort)
-
-    # Start data connection
-    handleData(dataPort, cType, serverName, fileName)
-
-    # close control connection
-    closeSocket(controlSocket)
 
 
 
