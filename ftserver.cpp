@@ -36,6 +36,7 @@ using namespace std;
 //#define DEBUG 0
 #define MAX_PACKET 1000
 #define MAX_COMMANDS 5
+#define MAX_LENGTH 50
 
 
 typedef enum{INVALID=0, LIST, GET}CTYPE;
@@ -58,7 +59,7 @@ struct session{
 	int controlSocket; /*Used for connecting with client*/
 	int dataSocket; /*Used for sending data to client*/
 	struct sockaddr_in client_adr;
-	string clientName;
+	char *clientName;
 };
 /*Data Structure initialization functions*/
 session* createSession();
@@ -167,6 +168,7 @@ session* createSession(){
 	theSession->msgLength=0;
 	theSession->msgBuffer=(char*)malloc(sizeof(char)* MAX_PACKET);
 	theSession->commands=(char**)malloc(MAX_COMMANDS * sizeof(char*));
+	theSession->clientName=(char*)malloc(sizeof(char)*MAX_LENGTH);
 
 	/*Allocate memory for array of strings*/
 	for(int i=0; i < MAX_COMMANDS; i++){
