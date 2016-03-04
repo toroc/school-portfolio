@@ -1,0 +1,51 @@
+	<form method="GET" action="/section-results">
+		<fieldset>
+			<legend>Explore by Section</legend>
+			<label for="city">City</label>
+			<input type="text" name="city" id="locationName">
+			<label for="state">State</label>
+			<input type="text" name="state" id="stateName">
+			<label for="section">Section:</label>
+			<select name="section">
+				<option value="food">Food
+				<option value="drinks">Drinks
+				<option value="coffee">Coffee
+				<option value="shops">Shops
+				<option value="arts">Arts
+				<option value="outdoors">Outdoors
+				<option value="sights">Sights
+				<option value="trending">Trending
+			</select>
+			<input type="submit" id="submit">
+		</fieldset>
+	</form>
+
+	{{#if dataList}}
+	<script src="/js/explore.js"></script>
+	<table id="formdata">
+		<thead>
+			<tr>
+				<th>Name</th>
+				<th>Value</th>
+			</tr>
+		</thead>
+		<tbody>
+			{{#each dataList}}
+			<tr>
+				
+				<td>{{this.name}}
+					<td>{{this.value}}
+						
+					</tr>{{/each}}
+				</tbody>
+			</table>
+			{{/if}}
+
+			{{#if results}}
+			<h1>Response from Foursquare :</h1>
+			<pre class="prettyprint">
+				<code class="prettyprint">
+					{{results}}
+				</code>
+			</pre>
+			{{/if}}

@@ -9,6 +9,7 @@
 	</fieldset>
 </form>
 
+{{#if dataList}}
 <script src="/js/explore.js"></script>
 <table id="formdata">
 	<thead>
@@ -27,10 +28,13 @@
 		</tr>{{/each}}
 	</tbody>
 </table>
+{{/if}}
 
+{{#if results}}
 <h1>Response from Foursquare :</h1>
 <pre class="prettyprint">
 <code class="prettyprint">
 {{results}}
 </code>
 </pre>
+{{/if}}
