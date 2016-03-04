@@ -16,7 +16,6 @@ var handlebars = require('express-handlebars').create({defaultLayout:'main'});
 var bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 
-var oauthSignature =require('oauth-signature');
 
 /*Setup default rendering engine and extension*/
 app.engine('handlebars', handlebars.engine);
@@ -24,8 +23,6 @@ app.set('view engine', 'handlebars');
 
 /*Set up port*/
 app.set('port', 4567);
-
-var credentials = require('./credentials.js');
 
 /*Set up static files*/
 app.use(express.static('public'));
@@ -46,26 +43,12 @@ app.get('/getting-started', function(req, res, next){
 app.get('/profile', function(req, res, next){
 	res.render('profile');
 });
-app.get('/test', function(req, res, next){
 
-	var context = {};
-
-	/*Request user authentication*/
-	request('toroc:'+credentials.user_token+'https://api.github.com/user', handleProfile)
-
-	function handleProfile(err, response, body){
-
-		if(!err && response.statusCode <400){
-			context.profile=body;
-			res.render('home', context);
-		}
-		else{
-			console.log(response.statusCode);
-		}
-		next(err);
-	}
-
-
+app.get('/users', function(req, res, next){
+	res.render('users');
+});
+app.get('/search', function(req, res, next){
+  res.render('search');
 });
 
 
