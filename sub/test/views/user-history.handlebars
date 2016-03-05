@@ -1,21 +1,30 @@
 <div class="page-header">
-  <h1>Venues - Search <small>Subtext for header</small></h1>
+  <h1>User - History <br>
+    <small>Feeling a bit stalkerish.</small></h1>
 </div>
 </div>
 
 
+<h3>Getting a user's access token</h3>
 
-<p>Let's get a list of recommended venues near a specified location</p>
-
-<h3>Radius</h3>
 
 <pre class="prettyprint">
 <code class="prettyprint">
-
+https://foursquare.com/oauth2/authenticate
+    ?client_id=CLIENT_ID
+    &response_type=token
+    &redirect_uri=YOUR_REGISTERED_REDIRECT_URI
 </code>
 </pre>
 
-<h3>Section</h3>
+<h3>Getting a user's friends </h3>
+{{!-- Code --}}
+<pre class="prettyprint">
+<code class="prettyprint">
+    https://api.foursquare.com/v2/users/self?oauth_token=ACCESSTOEKEN&v=20160304
+</code>
+</pre
+
 
 <p>I would display my venue history, but since I've checked in at over 1100 venues and checked in over 1300 times, I'll just list some of the highlights: </p>
 
@@ -64,3 +73,6 @@
          },
 </code>
 </pre>
+
+<h3>Response breakdown:</h3>
+<p>We can get the following items from </p>
