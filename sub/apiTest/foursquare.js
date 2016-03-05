@@ -9,6 +9,12 @@ var request=require('request');
 var express = require('express');
 var app = express();
 
+var config = require('./config.js');
+var foursquare = require('node-foursquare')(config);
+
+
+
+
 /*Import and setup handlebars*/
 var handlebars = require('express-handlebars').create({defaultLayout:'main'});
 
@@ -24,7 +30,7 @@ app.set('view engine', 'handlebars');
 /*Set up port*/
 app.set('port', 3000);
 
-var credentials = require('./credentials.js');
+var credentials = require('./config.js');
 
 /*Set up static files*/
 app.use(express.static('public'));
@@ -88,7 +94,7 @@ app.get('/search', function(req, res, next){
 	function handleSearch(err, response, body){
 		if(!err && response.statusCode < 400){
 			context.results=body;
-			console.log(JSON.stringify(body));
+			console.log(JSON.parse(body));
 
 
 			res.render('explore', context);
@@ -240,6 +246,9 @@ app.get('/search-results', function(req, res, next){
 
 
 
+
+
+
 app.get('/authenticate', function(req, res, next){
 
   var context={};
@@ -283,6 +292,32 @@ app.get('/get-token', function(req, res, next){
   
 });
 
+
+
+
+
+app.get('/login', function(req, res){
+  /*Call the URL with status code*/
+  res.writeHead(303, { 'location': foursquare.getAuthClientRedirectUrl()});
+  res.end();
+});
+
+app.get('/callback', function (req, res){
+  /*Get the access token from the URL*/
+  foursquare.getAccessToken({
+    code: req.query.code
+  }, function (error, accessToken){
+    if(error){
+      res.send('An error was thrown: '+ error.message);
+    }
+    else{
+
+      /*save access token for user*/
+      console.log(accessToken);
+    }
+    
+  });
+});
 /******************************************************
 #   Helper Functions to build URLs
 ******************************************************/
@@ -304,7 +339,7 @@ function buildExploreURL(urlQueries){
 
   return url;
 
-}
+};
 
 function buildSearchURL(urlQueries){
 

@@ -1,6 +1,4 @@
-pre{
-	background-color: #d9d9d9;
-	border-radius: 10px;
-	padding: 10px;
-	overflow-x: scroll;
+.content {
+	font-size: 18px;
+	line-height: 1.5;
 }
