@@ -1,0 +1,94 @@
+<div class="page-header">
+  <h1>User's Friends <br>
+    <small>Feeling a bit stalkerish.</small></h1>
+</div>
+</div>
+
+
+
+
+<p>Foursquare provides two types of accesses to their API: userless access and authenticated access. Up until now we have been doing userless access calls to get data from the API. If we want to get details about a foursquare user like the user's checkin history, we will need request an access token from foursquare. Access tokens will allow us to make requests on behalf of the user.
+</p>
+<h3>Requesting access token</h3>
+
+<p>Requesting an access token from Foursquare will involve a two-step process: </p>
+<ol>
+    <li>We will need to redirect the user to the following URL, where they will be prompted if they would like to authorize our application to get their token.</li>
+    <pre class="prettyprint"><code class="prettyprint">https://foursquare.com/oauth2/authenticate?client_id=CLIENT_ID&response_type=token&redirect_uri=YOUR_REGISTERED_REDIRECT_URI</code></pre>
+    <li>If the user accepts, they will be redirected back to our redirect URI, where we will need to parse the token received in the URL and save it. The URL will look something like this:</li>
+    <pre class="prettyprint"><code class="prettyprint">http://localhost:3000/callback?code=USER-ACCESS-TOKEN-HERE#_=</code></pre>
+</ol>
+
+
+<h3>Getting a user's access token with Node</h3>
+
+<p>If you have installed the Node wrapper</p>
+
+
+<h3>Using the user's access token to make calls</h3>
+<p>Now that we have the user's access token, we can use the token to make calls on behalf of the user.</p>
+
+
+
+
+
+
+<h3>Getting a user's friends </h3>
+{{!-- Code --}}
+<pre class="prettyprint">
+<code class="prettyprint">
+    https://api.foursquare.com/v2/users/self?oauth_token=ACCESSTOEKEN&v=20160304
+</code>
+</pre>
+
+
+<p>I would display my venue history, but since I've checked in at over 1100 venues and checked in over 1300 times, I'll just list some of the highlights: </p>
+
+
+
+<p>Making this call will return an array of venues</p>
+
+<h3>Javascript to make this call:</h3>
+
+
+
+<h3>Response from Foursquare:</h3>
+<pre class="prettyprint">
+<code class="prettyprint">
+{
+            "id":"525eeb3811d2c49bf03e23ec",
+            "name":"Toby's Estate Coffee",
+            "contact":{ },
+            "location":{ },
+            "categories":[ ],
+            "verified":true,
+            "stats":{ },
+            "url":"http:\/\/www.tobysestate.com",
+            "allowMenuUrlEdit":true,
+            "specials":{ },
+            "storeId":"",
+            "hereNow":{ },
+            "referralId":"v-1457052088",
+            "venueChains":[ ]
+         },
+         {
+            "id":"4aa52d50f964a520834720e3",
+            "name":"Stumptown Coffee Roasters",
+            "contact":{ },
+            "location":{ },
+            "categories":[ ],
+            "verified":true,
+            "stats":{ },
+            "url":"http:\/\/stumptowncoffee.com",
+            "allowMenuUrlEdit":true,
+            "specials":{ },
+            "venuePage":{ },
+            "hereNow":{ },
+            "referralId":"v-1457052088",
+            "venueChains":[ ]
+         },
+</code>
+</pre>
+
+<h3>Response breakdown:</h3>
+<p>We can get the following items from </p>
