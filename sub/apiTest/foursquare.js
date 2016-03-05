@@ -9,7 +9,9 @@ var request=require('request');
 var express = require('express');
 var app = express();
 
+/*import credentials*/
 var config = require('./config.js');
+/*Import foursquare module*/
 var foursquare = require('node-foursquare')(config);
 
 
@@ -293,7 +295,24 @@ app.get('/get-token', function(req, res, next){
 });
 
 
+app.get('/search', function (req, res){
 
+  var context = {};
+  foursquare.search({
+    near: 'West Hollywood, Ca',
+    query: 'donuts'
+  }, function (error, results){
+    if (error){
+      res.send('An error was thrown: '+ error.message);
+    }
+    else{
+      context.results = results;
+      console.log(results.body);
+    }
+  
+
+  });
+});
 
 
 app.get('/login', function(req, res){
