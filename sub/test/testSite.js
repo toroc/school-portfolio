@@ -5,9 +5,10 @@
 /*Import Node module request*/
 var request=require('request');
 
-/*Import express*/
+/*Import express node module*/
 var express = require('express');
 var app = express();
+
 
 /*Import and setup handlebars*/
 var handlebars = require('express-handlebars').create({defaultLayout:'main'});
@@ -24,9 +25,9 @@ app.set('view engine', 'handlebars');
 /*Set up port*/
 app.set('port', 4567);
 
+
 /*Set up static files*/
 app.use(express.static('public'));
-
 /******************************************************
 #   Routes
 ******************************************************/
@@ -52,6 +53,9 @@ app.get('/user-friends', function(req, res, next){
   res.render('user-friends');
 });
 
+app.get('/user-history', function(req, res, next){
+  res.render('user-badges');
+});
 
 app.get('/search', function(req, res, next){
   res.render('search');
