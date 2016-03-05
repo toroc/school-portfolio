@@ -15,8 +15,6 @@
     "express-handlebars": "^3.0.0",
     "express-session": "^1.11.3",
     "mysql": "^2.8.0",
-    "node-sass": "^3.4.2",
-    "node-sass-middleware": "^0.9.7",
     "request": "^2.69.0"
   }
 }
