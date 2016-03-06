@@ -53,7 +53,7 @@ struct session{
 	int numCommands;
 	CTYPE type;
 	int commValid; /*0=false, 1=true*/
-	string fileName;
+	char * fileName;
 	int dataPort;
 	int controlPort;
 	/*Socket file descriptors*/
@@ -704,7 +704,7 @@ bool fileinDir(struct session *thisSession)
 		int dirFileLen=strlen(curDir->d_name);
 
 		/*Return true if match*/
-		if(strncmp(curDir->d_name, thisSession->fileName.c_str(),dirFileLen)==0){
+		if(strncmp(curDir->d_name, thisSession->fileName,dirFileLen)==0){
 			return true;
 		}
 	}
@@ -765,7 +765,7 @@ void sendFile(struct session *thisSession)
 
 	
 	/*Open file*/
-	fileFD=fopen(thisSession->fileName.c_str(),"r");
+	fileFD=fopen(thisSession->fileName,"r");
 
 	if(fileFD==NULL){
 		cout << "Error: unable to open file." << endl;
