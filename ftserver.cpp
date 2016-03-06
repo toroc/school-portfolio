@@ -4,16 +4,17 @@
 #   File Created: 2/16/2016
 #   Last Modified: 2/17/2016
 #   Filename: ftserver.cpp
-#   Description: This program is the server side of a chat client.
+#   Description: This program is the server side of a file transfer client.
 #	A TCP socket is created to listen for incoming connections from
-#	clients. When a connection is accepted, the chat server gets
-#	the incoming message, displays it on the screen, and prompts the
-#	user for an outgoing reply. The outgoing reply is sent from the
+#	clients. When a connection is accepted, the file transfer server gets
+#	the incoming command, parses the command, and 
+#	 The outgoing reply is sent from the
 #	server to the connected client. If at any point the connected
 #	client quits, the server goes back to listening for new connections.
 #	Server will continue to listen until a SIGINT is received to end the program.
 #   References:
 #		Beej's Guide
+
 #		UNIX: List a Directory
 #		http://www.gnu.org/software/libc/manual/html_node/Simple-Directory-Lister.html#Simple-Directory-Lister
 ******************************************************/
@@ -62,36 +63,31 @@ struct session{
 	struct sockaddr_in client_adr;
 	char *clientName;
 };
+
+/*Main Program helper functions*/
+void sigHandler(int n);
+void checkCommandLine(int argcount, char *args[]);
+
 /*Data Structure initialization functions*/
 session* createSession();
 void freeSession(struct session *thisSession);
 
-
-void checkCommandLine(int argcount, char *args[]);
-/*function prototypes*/
-
-/*Socket & Connection Prototypes */
+/*Socket & Connection Functions */
 void startServer(struct session *thisSession, int ftPort);
 void startNewConnection(struct session *thisSession);
-bool handleRequest(struct session *thisSession);
 void setupDataConnection(struct session *thisSession);
-void respondToRequest(struct session *thisSession);
-
 void closeDataSocket(struct session *thisSession);
 void closeControlSocket(struct session *thisSession);
+void listening(int port);
 
 /*Connection helper functions*/
-
-void receiveAll(struct session *thisSession);
+void receiveCtrl(struct session *thisSession);
 void parseMessage(struct session *thisSession);
 void identifyCommands(struct session *thisSession);
 
-/*Helper functions*/
-void listening(int port);
-void intro();
-
-void sigHandler(int n);
-/*Request connections*/
+/*File transfer Flow */
+bool handleRequest(struct session *thisSession);
+void respondToRequest(struct session *thisSession);
 
 /*File Transfer helper functions*/
 string getDirectoryContents();
@@ -102,6 +98,7 @@ void sendError( struct session *thisSession);
 void sendFileError(struct session *thisSession);
 void readSocket(struct session *thisSession);
 void sendOK(struct session *thisSession);
+
 
 int main(int argc, char *argv[])
 {
@@ -137,6 +134,10 @@ int main(int argc, char *argv[])
 }
 
 /******************************************************
+#   Main Program Helper Functions
+******************************************************/
+
+/******************************************************
 #   checkCommandLine
 #   @desc: ensure program is executed with correct
 #       command else, program ends
@@ -151,6 +152,19 @@ void checkCommandLine(int argcount, char *args[])
 		exit(1);
 	}
 }
+
+/******************************************************
+#   sigHandler
+#   @desc: catch signal and exit with signal number
+#   @param: signal #
+#   @return: void
+******************************************************/
+void sigHandler(int n)
+{
+	/*exit w signal #*/
+	exit(n);
+}
+
 /******************************************************
 #   Session Data Structure Functions
 ******************************************************/
@@ -159,12 +173,11 @@ void checkCommandLine(int argcount, char *args[])
 #   @desc: allocate memory for  data structure
 #       and return pointer to session object
 #   @param: n/a
-#   @return: struct session *theSession
+#   @return: pointer to session *theSession object
 ******************************************************/
 session* createSession(){
 
 	/*Allocate memory for the session variables*/
-
 	session *theSession = (session*)malloc(sizeof(session));
 	theSession->msgLength=0;
 	theSession->msgBuffer=(char*)malloc(sizeof(char)* MAX_PACKET);
@@ -182,7 +195,7 @@ session* createSession(){
 /******************************************************
 #   freeUser
 #   @desc: Deallocate the memory used up by user
-#   @param: pointer to user object
+#   @param: pointer to session datat structure object
 #   @return: void
 ******************************************************/
 void freeSession(struct session *thisSession)
@@ -192,25 +205,13 @@ void freeSession(struct session *thisSession)
 }
 
 
-
-
-/******************************************************
-#   funcName
-#   @desc:
-#   @param:
-#   @return:
-******************************************************/
-void intro()
-{
-	cout << "Welcome to ftserver! \n\n" << endl;
-}
 /******************************************************
 #   Socket & Connection Functions
 ******************************************************/
 /******************************************************
 #   startServer
-#   @desc: 
-#   @param: pointer to data structure session, and port
+#   @desc: establish server socket connection on local host
+#   @param: pointer to session data structure, and port
 #   @return: void
 ******************************************************/
 void startServer(struct session *thisSession, int ftPort)
@@ -256,9 +257,9 @@ void startServer(struct session *thisSession, int ftPort)
 }
 /******************************************************
 #   startNewConnection
-#   @desc:
-#   @param:
-#   @return:
+#   @desc: starts connection with incoming client
+#   @param: pointer to session data structure object
+#   @return: void
 ******************************************************/
 void startNewConnection(struct session *thisSession)
 {
@@ -297,37 +298,12 @@ void startNewConnection(struct session *thisSession)
 	thisSession->clientName=clientName;
 
 }
-/******************************************************
-#   funcName
-#   @desc:
-#   @param:
-#   @return:
-******************************************************/
-bool handleRequest(struct session *thisSession)
-{
-	cout << "DEBUG----Inside handleRequest" << endl;
-	/*Get commands from connection*/
-	receiveAll(thisSession);
-
-	/*Parse message received into commands*/
-	parseMessage(thisSession);
-
-	/*Identify commands received*/
-	identifyCommands(thisSession);
-
-	/*Respond to client request*/
-	respondToRequest(thisSession);
-
-	/*To indicate completion*/
-	return false;
-}
-
 
 /******************************************************
-#   funcName
-#   @desc:
-#   @param:
-#   @return:
+#   setupDataConnection
+#   @desc: establish data connection for data transfer
+#   @param: pointer to session data structure object
+#   @return: void
 ******************************************************/
 void setupDataConnection(struct session *thisSession)
 {
@@ -364,10 +340,11 @@ void setupDataConnection(struct session *thisSession)
 	
 	
 }
+
 /******************************************************
-#   funcName
-#   @desc:
-#   @param:
+#   closeControlSocket
+#   @desc: close control socket connection
+#   @param: pointer to session data structure object
 #   @return:
 ******************************************************/
 void closeControlSocket(struct session *thisSession)
@@ -380,9 +357,9 @@ void closeControlSocket(struct session *thisSession)
 }
 
 /******************************************************
-#   funcName
-#   @desc:
-#   @param:
+#   closeDataSocket
+#   @desc: close data socket connection
+#   @param: pointer to session data structure object
 #   @return:
 ******************************************************/
 void closeDataSocket(struct session *thisSession)
@@ -393,74 +370,27 @@ void closeDataSocket(struct session *thisSession)
 		cout << "Error: unable to close data socket." << endl;
 	}
 }
-/******************************************************
-#   funcName
-#   @desc:
-#   @param:
-#   @return:
-******************************************************/
-void respondToRequest(struct session *thisSession)
+
+
+/*Print to console*/
+void listening(int port)
 {
-	cout << "DEBUG----Inside respondToRequest" << endl;
-
-	if(thisSession->type==INVALID){
-		/*Send error message on control socket*/
-		sendError(thisSession);
-
-		return;
-	}
-
-	/*Find if file exists in*/
-	if(thisSession->type == GET){
-
-		/*Was file found in directory*/
-		bool fileFound=fileinDir(thisSession);
-
-		if(!fileFound){
-			/**/
-			sendFileError(thisSession);
-			/**/
-			return;
-		
-		}
-	}
-
-	/*Since no error send OK on connection P*/
-	sendOK(thisSession);
-
-	/*Start data connection*/
-	setupDataConnection(thisSession);
-
-	if(thisSession->type==LIST){
-
-		sendDirectory(thisSession);
-
-		return;
-	}
-
-
-	if(thisSession->type==GET){
-
-		sendFile(thisSession);
-
-		return;
-	}
+	cout << "ftserver > now listening for incoming connections on port #" << port << "." << endl;
 }
-
-
 
 /******************************************************
 #   Connection Helper Functions
 ******************************************************/
 /******************************************************
-#   receiveall
-#   @desc:
-#   @param: n/a
-#   @return:
+#   receiveCtrl
+#   @desc: store message received in control connection
+#		in msgBuffer of session data structure
+#   @param: pointer to session data structure object
+#   @return: void
 ******************************************************/
-void receiveAll(struct session *thisSession){
+void receiveCtrl(struct session *thisSession){
 
-	cout << "DEBUG----Inside receiveAll" << endl;
+	cout << "DEBUG----Inside receiveCtrl" << endl;
 
 	/*Clear the buffer*/
 	bzero(thisSession->msgBuffer, MAX_PACKET);
@@ -484,7 +414,7 @@ void receiveAll(struct session *thisSession){
 #   parseMessage
 #   @desc: parse the command stored in  user's userInput into
 #       individual arguments stored in user's arguments
-#   @param: pointer to user object
+#   @param: pointer to session data structure object
 #   @return: void
 ******************************************************/
 /*Repurposed this function from a CS344 function */
@@ -510,22 +440,22 @@ void parseMessage(struct session *thisSession)
         while ((*buf != '\0') && (*buf != ' ') && (*buf != '\n')) {
             buf++;
         }
-
-
+        /*Increment count*/
         num++;
     }
 
-  
+  	/*set var to count*/
     thisSession->numCommands=num;
     
     *comms=0;/*Make it null terminated*/
 
 }
+
 /******************************************************
 #   identifyCommands
-#   @desc:
-#   @param: 
-#   @return:
+#   @desc: identify the command received from client
+#   @param: pointer to session data structure object
+#   @return: void
 ******************************************************/
 void identifyCommands(struct session *thisSession)
 {
@@ -578,7 +508,6 @@ void identifyCommands(struct session *thisSession)
 			/*Commands not identical in length*/
 			thisSession->type=INVALID;
 		}
-
 		
 	}
 
@@ -592,8 +521,7 @@ void identifyCommands(struct session *thisSession)
 			if(strncmp(thisSession->commands[0],get,listLen)==0){
 
 				cout << "DEBUG----Requesting file" << endl;
-
-				
+			
 				/*Set command type*/
 				thisSession->type=GET;
 
@@ -624,37 +552,92 @@ void identifyCommands(struct session *thisSession)
 
 	}
 }
+
+
+
+
+
 /******************************************************
-#   Helper function used to print to console that
-#   chat serve is listening
+#   File Transfer Flow Functions
 ******************************************************/
-void listening(int port)
+/******************************************************
+#   handlerRequest
+#   @desc: handle transfer request from client
+#   @param: pointer to session data structure object
+#   @return: false when complete
+******************************************************/
+bool handleRequest(struct session *thisSession)
 {
-	cout << "ftserver > now listening for incoming connections on port #" << port << "." << endl;
+	cout << "DEBUG----Inside handleRequest" << endl;
+	/*Get commands from connection*/
+	receiveCtrl(thisSession);
+
+	/*Parse message received into commands*/
+	parseMessage(thisSession);
+
+	/*Identify commands received*/
+	identifyCommands(thisSession);
+
+	/*Respond to client request*/
+	respondToRequest(thisSession);
+
+	/*To indicate completion*/
+	return false;
 }
 
-
 /******************************************************
-#   Function to handle the signal interruptions
-#   and exit the program
-#
+#   respondToRequest
+#   @desc: respond appropriately to request from client
+#   @param:pointer to session data structure object
+#   @return: void
 ******************************************************/
-void sigHandler(int n)
+void respondToRequest(struct session *thisSession)
 {
-	exit(n);
+	cout << "DEBUG----Inside respondToRequest" << endl;
+
+	if(thisSession->type==INVALID){
+		/*Send error message on control socket*/
+		sendError(thisSession);
+
+		return;
+	}
+
+	/*Find if file exists in*/
+	if(thisSession->type == GET){
+
+		/*Was file found in directory*/
+		bool fileFound=fileinDir(thisSession);
+
+		if(!fileFound){
+			/**/
+			sendFileError(thisSession);
+			/**/
+			return;
+		
+		}
+	}
+
+	/*Since no error send OK on control connection*/
+	sendOK(thisSession);
+
+	/*Start data connection*/
+	setupDataConnection(thisSession);
+
+	if(thisSession->type==LIST){
+
+		sendDirectory(thisSession);
+
+		return;
+	}
+
+
+	if(thisSession->type==GET){
+
+		sendFile(thisSession);
+
+		return;
+	}
 }
-
-/******************************************************
-#   funcName
-#   @desc:
-#   @param:
-#   @return:
-******************************************************/
-
-
-/******************************************************
-#   File Transfer Helper Functions
-******************************************************/
 
 /******************************************************
 #   getDirectoryContents
@@ -699,15 +682,43 @@ string getDirectoryContents()
 
 }
 
+/******************************************************
+#   fileinDir
+#   @desc: validate whether file exists in directory
+#   @param: pointer to session data structure object
+#   @return: true: file exists, false: no file in dir
+******************************************************/
+bool fileinDir(struct session *thisSession)
+{
+	/*directory pointer*/
+	DIR *dirPointer;
+	struct dirent *curDir;
 
+	/*Open directory*/
+	dirPointer=opendir(".");
 
+	/*Loop through files in directory*/
+	while((curDir=readdir(dirPointer))){
 
+		/*Length of file in directory*/
+		int dirFileLen=strlen(curDir->d_name);
+
+		/*Return true if match*/
+		if(strncmp(curDir->d_name, thisSession->fileName.c_str(),dirFileLen)==0){
+			return true;
+		}
+	}
+	/*close file descriptor*/
+	closedir(dirPointer);
+	/*file not found in directory*/
+	return false;
+}
 
 /******************************************************
-#   funcName
-#   @desc:
-#   @param:
-#   @return:
+#   sendDirectory
+#   @desc: send directory contents over data connection
+#   @param: pointer to session data structure object
+#   @return: void
 ******************************************************/
 void sendDirectory(struct session *thisSession)
 {
@@ -734,15 +745,17 @@ void sendDirectory(struct session *thisSession)
 	closeDataSocket(thisSession);
 
 }
-/******************************************************
-#   funcName
-#   @desc:
-#   @param:
-#   @return:
-******************************************************/
-void sendFile(struct session *thisSession){
 
-	/*Variables with messages to send*/
+
+/******************************************************
+#   sendFile
+#   @desc: send file contents over data connection
+#   @param: pointer to session data structure object
+#   @return: void
+******************************************************/
+void sendFile(struct session *thisSession)
+{
+
 	/*File descriptor for reading file*/
 	FILE *fileFD;
 	int result;
@@ -750,17 +763,18 @@ void sendFile(struct session *thisSession){
 	/*buffer to store file contents*/
 	char buffer[MAX_PACKET*2];
 
-	/*Send file to client*/	
-
+	
+	/*Open file*/
 	fileFD=fopen(thisSession->fileName.c_str(),"r");
 
 	if(fileFD==NULL){
 		cout << "Error: unable to open file." << endl;
 	}
 
-	/*Load file items to buffer*/
+	/*Continously load file items to buffer*/
 	while(fgets(buffer, sizeof(buffer), fileFD)!= NULL){
 
+		/*Send file to client*/	
 		result=send(thisSession->dataSocket, buffer, strlen(buffer),0);
 
 		/*Ensure send worked*/
@@ -782,52 +796,19 @@ void sendFile(struct session *thisSession){
 	closeDataSocket(thisSession);
 
 }
-/******************************************************
-#   funcName
-#   @desc:
-#   @param:
-#   @return:
-******************************************************/
-bool fileinDir(struct session *thisSession)
-{
-	/*directory pointer*/
-	DIR *dirPointer;
-	struct dirent *curDir;
 
-	/*Open directory*/
-	dirPointer=opendir(".");
-
-
-	/*Loop through files in directory*/
-	while((curDir=readdir(dirPointer))){
-
-		/*Length of file in directory*/
-		int dirFileLen=strlen(curDir->d_name);
-
-
-		/*Return true if match*/
-		if(strncmp(curDir->d_name, thisSession->fileName.c_str(),dirFileLen)==0){
-			return true;
-		}
-	}
-
-	closedir(dirPointer);
-
-	return false;
-}
 
 /******************************************************
-#   funcName
-#   @desc:
-#   @param:
-#   @return:
+#   sendError
+#   @desc: send error to client when command is invalid
+#   @param: pointer to session data structure object
+#   @return: void
 ******************************************************/
 void sendError( struct session *thisSession)
 {
-	/**/
+	
 	string invalidCommand="Error. Command is invalid.";
 	thisSession->message=invalidCommand;
-
 
 	int length = thisSession->message.length();
 
@@ -854,10 +835,10 @@ void sendError( struct session *thisSession)
 
 }
 /******************************************************
-#   funcName
-#   @desc:
-#   @param:
-#   @return:
+#   sendFileError
+#   @desc: send error when file not found
+#   @param: pointer to session data structure object
+#   @return: void
 ******************************************************/
 void sendFileError(struct session *thisSession)
 {
@@ -882,10 +863,10 @@ void sendFileError(struct session *thisSession)
 }
 
 /******************************************************
-#   funcName
-#   @desc:
-#   @param:
-#   @return:
+#   sendOK
+#   @desc: send ok to client to ACK request received
+#   @param: pointer to session data structure object
+#   @return: void
 ******************************************************/
 void sendOK(struct session *thisSession)
 {
@@ -901,3 +882,4 @@ void sendOK(struct session *thisSession)
 		cout << "Error: unable to send OK response to client." << endl;
 	}
 }
+
