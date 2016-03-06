@@ -6,14 +6,12 @@
 #   File Created: 2/16/2016
 #   Last Modified: 03/05/2016
 #   Filename: ftclient.py
-#   Description: 
+#   Description: This program is the client side of a file transfer system.
+#       A tcp control connection is established with the server, and a request is made,
+#       if the request is valid, the ftclient opens a data socket to receive
+#       the request data from the file transfer server. Once the data is received
+#       the client closes both connections.
 #   
-#   
-#   
-#    
-#   
-#  
-#  
 #   References:
 #   Socket Programming, Section 2.7 from Computer Networking, A Top-Down Approach (6th Edition)
 #   Python Central: Check if a file exists in a directory with Python 
@@ -276,11 +274,11 @@ def printControlMsg(name, control):
   
 
 def duplicateFile(fname):
-    """ ."""
+    """ Print duplicate msg to console."""
     print("ftclient > duplicate file name for file: "+fname+"\n")
 
 def printReq():
-    """ ."""
+    """Print req msg to console."""
     print("ftclient > sending request to server.\n")
 
 def receiveDirMsg(server, data):
@@ -288,7 +286,7 @@ def receiveDirMsg(server, data):
     print("ftclient > receiving directory structure from " +server+" on port "+str(data)+".\n")
 
 def receiveFileMsg(server, file, data):
-    """."""
+    """Print receive msg to console."""
     print("ftclient > receiving "+file+" from "+server+" on port "+str(data)+".\n")
 
 
