@@ -2,19 +2,18 @@
 #	CS 372 - Winter 2016 - Program 2
 #   By: Carol Toro
 #   File Created: 2/16/2016
-#   Last Modified: 2/17/2016
+#   Last Modified: 03/05/2016
 #   Filename: ftserver.cpp
-#   Description: This program is the server side of a file transfer client.
+#   Description: This program is the server side of a file transfer system.
 #	A TCP socket is created to listen for incoming connections from
 #	clients. When a connection is accepted, the file transfer server gets
-#	the incoming command, parses the command, and 
-#	 The outgoing reply is sent from the
-#	server to the connected client. If at any point the connected
-#	client quits, the server goes back to listening for new connections.
-#	Server will continue to listen until a SIGINT is received to end the program.
+#	the incoming request on a control connection, and responds to the request
+#	on a data connection if the request is valid. When the transfer is complete,
+#	the server goes back to listening for new connections. Server will continue 
+#	to listen until a SIGINT is received to end the program.
 #   References:
 #		Beej's Guide
-
+#		http://beej.us/guide/bgnet/output/html/multipage/syscalls.html#sendrecv
 #		UNIX: List a Directory
 #		http://www.gnu.org/software/libc/manual/html_node/Simple-Directory-Lister.html#Simple-Directory-Lister
 ******************************************************/
