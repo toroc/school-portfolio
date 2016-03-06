@@ -99,7 +99,6 @@ def closeSocket(sock):
 
 def startControlConnection(serverName, serverPort):
     """ Begin control connection with ftserver."""
-    print("DEBUG--inside startControlConnection")
 
     # Create client socket of type SOCK_STREAM
     clientSocket=createSocket()
@@ -115,7 +114,6 @@ def startControlConnection(serverName, serverPort):
 def startDataSocket(dataPort):
     """Initialize data socket."""
 
-    print("DEBUG--inside startDataSocket")
     # Create server like socket of type SOCK_STREAM
     dataSocket=createSocket()
 
@@ -130,7 +128,6 @@ def handleControl(sock, servName, servPort, command, file, dataPort):
     """ Process flow for control connection."""
     
     # Print to console
-    print("DEBUG--inside handleControl")
     printControlMsg(servName, servPort)
 
     printReq()
@@ -153,7 +150,6 @@ def validateControl(msg):
     """Validate control message from server."""
 
     if(msg == "OK"):
-        print("DEBUG--Message received by server")
         return True
     else:
         # Error message
@@ -164,35 +160,44 @@ def validateControl(msg):
 
 def handleData(dataPort, cType, serverName, filename):
     """ Process flow for data transmission."""
-    print("DEBUG--inside handleData")
+
     # Create data connection
     dataSocket = startDataSocket(dataPort)
 
     # Listen for incoming connection
     dataSocket.listen(1)
 
-    print("DEBUG--Data socket is ready to receive")
 
     while 1:
-        print("DEBUG--inside the while")
+        # Accept connection
         connectionSocket, addr = dataSocket.accept()
-        print("DEBUG--after the accept")
-         # Print to console
+
+        # directory list requested
         if(cType==1):
-            print("DEBUG--after the cType 1")
+
+            # print to console
             receiveDirMsg(serverName, dataPort)
+            # receive data
             message = connectionSocket.recv(1024)
+            # print to console
             printDirContents(message)
+            # print to console
             transComplete()
+            # exit
             break
 
+        
+        # file requested
         if(cType==2):
-            print("DEBUG--after cType 2")
+
             # console message
             receiveFileMsg(serverName, filename, dataPort)
+
             # rPass connection socket to receive file
             receiveFile(connectionSocket, filename)
+            # print to console
             transComplete()
+            # exit
             break
 
 
@@ -272,7 +277,7 @@ def printControlMsg(name, control):
 
 def duplicateFile(fname):
     """ ."""
-    print("ftclient > duplicate file name for file: "+fname)
+    print("ftclient > duplicate file name for file: "+fname+"\n")
 
 def printReq():
     """ ."""
