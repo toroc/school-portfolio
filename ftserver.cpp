@@ -186,7 +186,7 @@ session* createSession(){
 
 	/*Allocate memory for array of strings*/
 	for(int i=0; i < MAX_COMMANDS; i++){
-		theSession->commands[i]=(char*)malloc(20 * sizeof(char));
+		theSession->commands[i]=(char*)malloc(MAX_LENGTH * sizeof(char));
 	}
 
 	return theSession;
