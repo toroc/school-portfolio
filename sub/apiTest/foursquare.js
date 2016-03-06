@@ -10,7 +10,30 @@ var express = require('express');
 var app = express();
 
 /*import credentials*/
-var config = require('./config.js');
+
+var config = {
+  'secrets' : {
+    'clientId' : '04ZLPWU4HTOHQ5EMZ4KPFJUPNIYN1ASVYXSYSWIS0MT3Z1OZ',
+    'clientSecret' : '0IQVRWPOONLCIJDMIRHXTQSM0EWMNQ2M1QD31UYO4XLF1NTF',
+    'redirectUrl' : 'http://localhost:3000/callback',
+    'access_token' : 'DQSJOGHFA2TAXFVMVRSFQNF2ZW42JADTUMP3LAAFHPGIPE4Q'
+  },
+  
+  'winston' : {
+    'loggers': {
+      'core': {
+        'console': {
+          'level': 'warn'
+        }
+      },
+      'venues': {
+        'console': {
+          'level': 'debug'
+        }
+      }
+    }
+  }
+};
 /*Import foursquare module*/
 var foursquare = require('node-foursquare')(config);
 
@@ -61,7 +84,7 @@ app.get('/search-venues', function(req, res, next){
 
 
 
-app.get('/search', function(req, res, next){
+app.get('/search-now', function(req, res, next){
 
 
 	var urlQs=[];
