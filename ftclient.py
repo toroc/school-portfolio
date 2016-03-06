@@ -4,7 +4,7 @@
 # CS 372 - Winter 2016 - Program 2
 #   By: Carol Toro
 #   File Created: 2/16/2016
-#   Last Modified: 2/19/2016
+#   Last Modified: 03/05/2016
 #   Filename: ftclient.py
 #   Description: 
 #   
@@ -31,7 +31,7 @@ import argparse
 
 
 def main():
-    """ ."""
+    """ Function to handle primary flow of program."""
     # ensure user called program with valid args
     validateCommandLine()
 
@@ -39,7 +39,6 @@ def main():
     serverName = str(sys.argv[1])
     serverPort = int(sys.argv[2])
     command=str(sys.argv[3])
-
     dataPort = 0
     if(len(sys.argv)==5):
         dataPort=int(sys.argv[4])
@@ -93,30 +92,13 @@ def closeSocket(sock):
     sock.close()
 
 
-
-def sendMessage(sock, msg):
-    """ ."""
-    # Send the message
-    sock.sendall(msg)
-
-# Reference: https://utcc.utoronto.ca/~cks/space/blog/python/TcpKeepalivesInPython
-def setkeepalives(sock):
-
-    # Keep alive
-    sock.setsockopt(SOL_SOCKET, SO_KEEPALIVE, 1)
-    sock.setsockopt(SOL_TCP, TCP_KEEPIDLE, 60)
-    # overrides value shown by sysctl net.ipv4.tcp_keepalive_probes
-    sock.setsockopt(SOL_TCP, TCP_KEEPCNT, 4)
-    # overrides value shown by sysctl net.ipv4.tcp_keepalive_intvl
-    sock.setsockopt(SOL_TCP, TCP_KEEPINTVL, 15)
-
 #------------------------------------------------------------
 #  Functions to carry out program proccesses to send
 #       initializing, connecting, sending, and receiving
 #------------------------------------------------------------
 
 def startControlConnection(serverName, serverPort):
-    """ ."""
+    """ Begin control connection with ftserver."""
     print("DEBUG--inside startControlConnection")
 
     # Create client socket of type SOCK_STREAM
@@ -131,7 +113,7 @@ def startControlConnection(serverName, serverPort):
 
 
 def startDataSocket(dataPort):
-    """ ."""
+    """Initialize data socket."""
 
     print("DEBUG--inside startDataSocket")
     # Create server like socket of type SOCK_STREAM
@@ -145,9 +127,9 @@ def startDataSocket(dataPort):
 
 
 def handleControl(sock, servName, servPort, command, file, dataPort):
-    """ ."""
+    """ Process flow for control connection."""
+    
     # Print to console
-
     print("DEBUG--inside handleControl")
     printControlMsg(servName, servPort)
 
@@ -181,7 +163,7 @@ def validateControl(msg):
 
 
 def handleData(dataPort, cType, serverName, filename):
-    """ ."""
+    """ Process flow for data transmission."""
     print("DEBUG--inside handleData")
     # Create data connection
     dataSocket = startDataSocket(dataPort)
@@ -190,8 +172,6 @@ def handleData(dataPort, cType, serverName, filename):
     dataSocket.listen(1)
 
     print("DEBUG--Data socket is ready to receive")
-
-    setkeepalives(dataSocket)
 
     while 1:
         print("DEBUG--inside the while")
@@ -217,15 +197,11 @@ def handleData(dataPort, cType, serverName, filename):
 
 
 
-   # close connection
-
-
 def receiveFile(sock, filename):
-    """ ."""
+    """Receive file content."""
     # Create list to store file contents
     fileContents = []
     data =''
-
 
     # Reference: stackoverflow
     while True:
@@ -247,7 +223,7 @@ def receiveFile(sock, filename):
 
 
 def saveFile(fileContents, filename):
-    """ ."""
+    """ Save file contents to file."""
     # Figure out whether duplicate file
     filename = findDuplicate(filename)
 
@@ -258,18 +234,13 @@ def saveFile(fileContents, filename):
     for line in fileContents:
         print >> file, line
 
-    # try pickle pickle.dump(x, f)
+    
     # close file
     file.close()
 
 
-
-
-
-
-
 def findDuplicate(filename):
-    """ ."""
+    """Determine duplicate file."""
     # Check for duplicate file name
     fileRequested = filename
     fileVersion = 1
@@ -285,8 +256,6 @@ def findDuplicate(filename):
 
         # increment version incase it already exists
         fileVersion += 1
-
-        
 
     return filename
 
@@ -307,44 +276,41 @@ def duplicateFile(fname):
 
 def printReq():
     """ ."""
-    print("ftclient > sending request to server. ")
+    print("ftclient > sending request to server.\n")
 
 def receiveDirMsg(server, data):
     """Print message to console."""
-    print("ftclient > receiving directory structure from " +server+" on port "+str(data)+".")
+    print("ftclient > receiving directory structure from " +server+" on port "+str(data)+".\n")
 
 def receiveFileMsg(server, file, data):
     """."""
-    print("ftclient > receiving "+file+" from "+server+" on port "+str(data)+".")
+    print("ftclient > receiving "+file+" from "+server+" on port "+str(data)+".\n")
 
 
 def commandType(command):
     """Return type of command"""
 
     if command[1]=="l":
-        print("Requesting list\n")
         return 1
     
     if command[1]=="g":
-        print("Getting file")
         return 2
     
     #wrong command 
     return -1 
 
 def printDirContents(msg):
-
+    """Print directory contents to console."""
     print(msg)
 
 
 def transComplete():
-
-    print("ftclient > transfer is complete.")
+    """Print transfer is complete."""
+    print("ftclient > transfer is complete.\n")
 
 def errMsg(msg):
-
-    print("ftclient > received following message from ftserver: "+msg)
-
+    """Print error message received."""
+    print("ftclient > received following message from ftserver: \n\t"+msg)
 
 
 def commandMsg(comm, port,file):
@@ -382,8 +348,6 @@ def validateCommandLine():
             # exit
             exit()
  
-
-
 
 
 if __name__ == '__main__':
