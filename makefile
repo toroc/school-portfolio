@@ -12,4 +12,4 @@ ftserver.o :  ftserver.cpp
 
 
 clean:
-	rm -f *.o chatserve
+	rm -f *.o ftserver
