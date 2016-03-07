@@ -16,7 +16,7 @@ var config = {
     'clientId' : '04ZLPWU4HTOHQ5EMZ4KPFJUPNIYN1ASVYXSYSWIS0MT3Z1OZ',
     'clientSecret' : '0IQVRWPOONLCIJDMIRHXTQSM0EWMNQ2M1QD31UYO4XLF1NTF',
     'redirectUrl' : 'http://localhost:3000/callback',
-    'access_token' : 'DQSJOGHFA2TAXFVMVRSFQNF2ZW42JADTUMP3LAAFHPGIPE4Q'
+    'accessToken' : 'DQSJOGHFA2TAXFVMVRSFQNF2ZW42JADTUMP3LAAFHPGIPE4Q'
   },
   
   'winston' : {
@@ -86,27 +86,42 @@ app.get('/search-venues', function(req, res, next){
 
 /*Call venues search*/
 
-app.get('/search' , function(req, res){
+app.get('/search' , function(req, res, next){
   var context = {};
-  Foursquare.Venues.search({
-    "lat" : "37.33",
-    "lng" : "-121.8903",
-    "query" : "donuts"
-  }, displaySearch)
-  function displaySearch(error, results){
-    if (error){
+
+  /*Build optional params*/
+  var params = {};
+  params.query = "donuts";
+  params.novelty = "new";
+
+  Foursquare.Venues.explore("37.33", "-121.8903", "San Jose, Ca",  params,
+    config.accessToken, function(error, data){
+      
+    if(error){
       res.send("An error was thrown: "+ error.message);
+
     }
     else{
-      context.results = results;
-      console.log(results);
-      res.render('/search', context);
-    }
-  }
 
+      context.results = JSON.stringify(data);
+      console.log(data);
+      res.render('search', context);
+    }
+  });
+  
 });
 
 
+app.get('/searching' , function(req, res, next){
+  var context = {};
+  Foursquare.Venues.explore("37.33", "-121.8903", "San Jose, Ca",  {}, handleData);
+  
+});
+
+
+function handleData(data){
+  console.log(data);
+}
 
 
 app.get('/login', function(req, res){
@@ -136,47 +151,7 @@ app.get('/callback', function (req, res){
 ******************************************************/
 
 
-/*Helper functions*/
-function buildExploreURL(urlQueries){
 
-  var near = urlQueries[0].value+','+urlQueries[1].value;
-  console.log(near);
-
-  var section = urlQueries[2].value;
-
-  var limit = 15;
-
-  var url = globalURL+near+'&section='+section+'&limit='+limit;
-
-  console.log(url);
-
-  return url;
-
-};
-
-function buildSearchURL(urlQueries){
-
-  var near = urlQueries[0].value+','+urlQueries[1].value;
-  console.log(near);
-
-  var query= urlQueries[2].value;
-  console.log(query);
-
-  var limit = 15;
-
-  var url = globalURL+near+'&query='+query+'&limit='+limit;
-
-  console.log(url);
-
-  return url;
-
-}
-
-function buildAuthURL(){
-  var url ='https://foursquare.com/oauth2/authenticate?client_id='+credentials.client_id+'&response_type=token&redirect_uri=http://localhost:3000/get-token';
-  console.log(url);
-  return url;
-}
 
 app.get('/explore', function (req, res, next){
 	res.render('explore');
@@ -193,31 +168,7 @@ app.get('/exploring', function(req, res){
 
 });
 
-app.get('/formChecker', function(req,res){
-	/*Create array to store form params*/
-	var urlQs=[];
 
-	/*Loop through the queries*/
-	for (var key in req.query){
-		/*Add name value pairs*/
-		urlQs.push({'name' :key, 'value' :req.query[key]})
-	}
-	/*For debugging*/
-	console.log(urlQs);
-	console.log(req.query);
-
-	/*Create array of objects*/
-	var context={};
-	/*Set the form type*/
-	context.formType="GET";
-	/*Set the list to array of params*/
-	context.dataList=urlQs;
-	/*Pass object to render page*/
-	//res.render('formChecker', context);
-
-
-
-});
 
 app.use(function(req,res){
 	res.status(404);
