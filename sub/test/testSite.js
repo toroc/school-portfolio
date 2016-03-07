@@ -38,10 +38,13 @@ app.get('/', function(req, res, next){
 });
 
 
-app.get('/getting-started', function(req, res, next){
-	res.render('getting-started');
+app.get('/setup', function(req, res, next){
+	res.render('setup');
 });
 
+app.get('/background', function(req, res, next){
+  res.render('background');
+});
 
 app.get('/user', function(req, res, next){
 	res.render('user');
