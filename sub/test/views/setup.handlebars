@@ -13,23 +13,23 @@
 			<p>In order to gain access to the Foursquare API, you will need to have a Foursquare account, if you don’t have one, you can easily create a free account at <a href="http://foursquare.com">Foursquare.com</a>. After you login to your account, you will need to create an application on the Foursquare For Developers' <a href="https://foursquare.com/developers/apps">site</a>. The application </p>
 
 			{{!-- Image --}}
-			<img src="img/foursquare-app.png" class="img-fluid" alt="Responsive image">
+			<p class="center"><img src="img/foursquare-app.png" class="img-fluid" alt="Responsive image"></p>
 
 			<p>After you’ve created the application, Foursquare will provide you with the following credentials: Client ID and Client Secret. These credentials will allow you to make requests from the API.</p>
 
 			{{!-- Credentials image --}}
-			<img src="img/app-creds.png" class="img-fluid" alt="Responsive image">
+			<p class="center"><img src="img/app-creds.png" class="img-fluid" alt="Responsive image"></p>
 
 			<p>I recommend you store the credentials in a file named <code>config.js</code>, as you will be needing them each time you make a call to the API. This is what the inside of your file should look like:</p>
-			<pre> <code>module.exports = {
-				'secrets' : {
-				'clientId' : 'YOUR_CLIENT_ID',
-				'clientSecret' : 'YOUR_CLIENT_SECRET',
-				'redirectUrl' : 'YOUR_REDIRECT_URL'
-				}
-			};
-
-			</code>
+			<pre class="prettyprint">
+module.exports = {
+	'secrets' : {
+	'clientId' : 'YOUR_CLIENT_ID',
+	'clientSecret' : 'YOUR_CLIENT_SECRET',
+	'redirectUrl' : 'YOUR_REDIRECT_URL',
+	'accessToken' : 'YOUR_ACCESS_TOKEN'
+	}
+};
 			 </pre>
 
 
