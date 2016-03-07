@@ -4,60 +4,115 @@
 		<p>Let's get started</p>
 	</div>
 	<div class="content">
-		<p>Before we can start making calls to the API to get data, we will need to setup our system and understand how to make the calls and what happensa after we make the calls. This section will help you setup your system.</p>
+		<p>Let's review how to use the node foursquare module, the types of API calls we can make, and some tools that will make our life a bit easier.</p>
 		<div class="page-header">
-			<h1>Setup API Access</h1>
+			<h1>Understanding node-foursquare</h1>
 		</div>
 
 		<div class="content">
-			<p>In order to gain access to the Foursquare API, you will need to have a Foursquare account, if you don’t have one, you can easily create a free account at <a href="http://foursquare.com">Foursquare.com</a>. After you login to your account, you will need to create an application on the Foursquare For Developers' <a href="https://foursquare.com/developers/apps">site</a>. To create the application, you will need to fill out the fields and save your changes.</p>
+			<p>While we could make direct calls to the Foursquare API without using a module, our URLs would get pretty messy trying to append the various parameters we would like to use. The node-foursquare module will take the messiness out of the URLs, and make it easier to see what parameters we are passing to each call. For starters, the node-foursquare library consists of around nine different classes, but we will be mostly focused on Venues and Users.</p>
 
-			{{!-- Image --}}
-			<img src="img/foursquare-app.png" class="img-fluid" alt="Responsive image">
+			<p>In regards to Venues, we will be using the following library functions:</p>
+			<ul>
+				<li>
+					<code>explore(lat, lng, near, params, accessToken, callback)</code>
+				</li>
+				<li>
+					<code>search(lat, lng, near, params, accessToken, callback)</code>
+				</li>
+				<li>
+					<code>getTrending(lat, lng, params, accessToken, callback)</code>
+				</li>
+			</ul>
 
-			<p>After you’ve created the application, Foursquare will provide you with the following credentials: Client ID and Client Secret. These credentials will allow you to make requests from the API.</p>
+			<p>In regards to Users, we will be using the following library functions:</p>
 
-			{{!-- Credentials image --}}
-			<img src="img/app-creds.png" class="img-fluid" alt="Responsive image">
+			<ul>
+				<li>
+					<code>getCheckins(userId, params, accessToken, callback)</code>
+				</li>
+				<li>
+					<code>getFriends(userId, params, accessToken, callback)</code>
+				</li>
+				<li>
+					<code>getVenueHistory(userId, params, accessToken, callback)</code>
+				</li>
+			</ul>
+			
+			<p>In order to get access to these functions, we will need to import the module with the following code: </p>
 
-			<p>I recommend you store the credentials in a file named <code>config.js</code>, as you will be needing them each time you make a call to the API. This is what the inside of your file should look like:</p>
+			<code>var Foursquare = require('node-foursquare')(config);</code>
 
-<pre class="prettyprint">
-<code class="prettyprint">
-module.exports = {
-	'secrets' : {
-	'clientId' : 'YOUR_CLIENT_ID',
-	'clientSecret' : 'YOUR_CLIENT_SECRET',
-	'redirectUrl' : 'YOUR_REDIRECT_URL'
-	}
-};
-</code>
-</pre>
+			<p>To make a call to a function, we use our Foursquare variable and direct it to the type of function we wish to call:</p>
 
-
-			<p>A call to the API will look like this: </p>
-
-			<pre class="prettyprint">
-<code class="prettyprint">https://api.foursquare.com/v2/venues/search?ll=40.7,-74&client_id=CLIENT_ID&client_secret=CLIENT_SECRET&v=YYYYMMDD</code></pre>
-			<p>Every time you make a call, you will need to replace CLIENT_ID with your client id key, and replace CLIENT_SECRET with your client secret key. </p>
-
+			<ul>
+				<li>
+					<code>Foursquare.Venues.explore(…)</code>
+				</li>
+				<li>
+					<code>Foursquare.Users.getFriends(…)</code>
+				</li>
+			</ul>
 			
 
+			<p>I recommend you store the credentials in a file named <code>config.js</code>, as you will be needing them each time you make a call to the API. This is what the inside of your file should look like:</p>
+		
+
 		</div>
 		<div class="page-header">
-			<h1>Setup Foursquare Node Module</h1>
+			<h1>Understanding Foursquare API Access</h1>
 		</div>
 		<div class="content">
-			<p>Next we are going to install a node module that will make it easier for us to call the API using Node and Express. In order to install the Foursquare module, you will want to run the following command <code>npm install node-foursquare</code>. You will be able to find more information about the module on <a href="https://github.com/clintandrewhall/node-foursquare">GitHub</a>.</p>
+			<p>Foursquare provides two types of accesses to their API: <b>userless access</b> and <b>authenticated access</b>. For the most part, API calls that return information about venues require userless access. However, if we want to get details about a foursquare user like the user's checkin history, we will need request an access token from foursquare. Access tokens will allow us to make requests on behalf of the user. Furthermore, when we use the node-foursquare module to make all calls, the module requires a user's access token to make calls.</p>
+
+			<p>Requesting an access token from Foursquare will involve a two-step process: </p>
+			<ol>
+			    <li>We will need to redirect the user to the following URL, where they will be prompted if they would like to authorize our application to get their token.</li>
+			    <pre class="prettyprint"><code class="prettyprint">https://foursquare.com/oauth2/authenticate?client_id=CLIENT_ID&response_type=token&redirect_uri=YOUR_REGISTERED_REDIRECT_URI</code></pre>
+			    <li>If the user accepts, they will be redirected back to our redirect URI, where we will need to parse the token received in the URL and save it. The URL will look something like this:</li>
+			    <pre class="prettyprint"><code class="prettyprint">http://localhost:3000/callback?code=USER-ACCESS-TOKEN-HERE#_=</code></pre>
+			</ol>
+			<p>Now let's use our foursquare node module to help us get our own access token. We will call <code>Foursquare.getAuthClientRedirectUrl() In order to be sent to the Foursquare authentication page, we direct or application handler to the /login page and go there from our browser.</code>
+			</p>
 		
-			<p>While the GitHub readme has examples on how to use the module and store the API keys, as I mentioned before, I recommend you store the keys in a separate file instead of creating a variable config which stores the keys on the JavaScript page. This will ensure that your keys are kept safe should you decide to share your code. You can use the following code sample, where the file <code>config.js</code> stores the keys.</p>
+			
 
-			<pre class="prettyprint linenums">
-var config = require('./config.js');
-var foursquare = require('node-foursquare')(config);
-			</pre>
+<pre class="prettyprint lang-js">
+app.get('/login', function(req, res){
+  /*Call the URL with status code*/
+  res.writeHead(303, { 'location': foursquare.getAuthClientRedirectUrl()});
+  res.end();
+});</pre>
+			<p>We will also setup a callback handler that is the same as our the redirectUrl we setup when we saved our application on the Foursquare site.  If an access token is returned within the URL at our callback page, we will display it onto the console and save it into our <code>config.js</code> file.</p>
 
-			<p>Now that we have set up the API access and the Node module, we are almost ready to start making calls. Next, we need to understand a bit more about the node module we are using and slight differences in API calls.</p>
+<pre class="prettyprint lang-js">
+app.get('/callback', function (req, res){
+  /*Get the access token from the URL*/
+  Foursquare.getAccessToken({
+    code: req.query.code
+  }, function (error, accessToken){
+    if(error){
+      res.send('An error was thrown: '+ error.message);
+    }
+    else{
+      /*save access token for user*/
+      console.log(accessToken);
+    }    
+  });
+});</code></pre>
+			<p>Now that we have an access token, we can start using the node-foursquare module to start calling the API, but let's not get ahead of ourselves yet.</p>
 		</div>
 
-	
+	<div class="page-header">
+			<h1>Tools </h1>
+	</div>
+		<div class="content">
+			<p>When using the Node module for the foursquare API, we will be required to enter <b>latitude</b> and <b>longitude</b> of the user’s location for each call. If we decide to make the direct requests ourselves, we can skip the latitude and longitude requires as long as we fulfill the near parameter which takes in a City, State.</p>
+			<p>We can easily find out what our latitude and longitude is by using a <b>GeoCoder</b>. While we could implement the Google Maps Geocoding API to provide translations for zipcodes or city and state, that would be an entire different Guide in itself, so for now, we will be using the MelissaData <a href="http://www.melissadata.com/lookups/GeoCoder.asp">site</a> where we can provide a zip code and get the latitude and longitude coordinates. Be sure to bookmark the site if you intend on looking up various locations.</p>
+			{{!-- geocoder image --}}
+			<p class="center"><img src="img/geocoder.png" class="img-fluid" alt="Responsive image"></p><br>
+
+			<p>After we make our calls to the API, we are going to receive an incredibly ugly JSON response which will be very difficult to understand if we just print it to the console or even print it into a page. To make things a bit easier, we are going to parse our JSON object into a format that we can easily digest and understand. I will be using a JSON formatter from the Curious Concept <a href="https://jsonformatter.curiousconcept.com/#">website</a>. In the first call we make, I'll walk you through how to use the formatter.</p>
+			
+		</div>
+	</div>
