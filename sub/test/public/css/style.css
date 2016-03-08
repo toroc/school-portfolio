@@ -6,3 +6,8 @@
 .center{
 	text-align: center;
 }
+
+pre{
+	overflow-y:scroll;
+	max-height: 450px;
+}
