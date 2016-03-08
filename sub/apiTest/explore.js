@@ -113,6 +113,33 @@ app.get('/search' , function(req, res, next){
 });
 
 
+app.get('/friends' , function(req, res, next){
+  var context = {};
+
+  /*Build optional params*/
+  var params = {};
+  params.query = "donuts";
+  params.novelty = "new";
+
+  Foursquare.Venues.explore("37.33", "-121.8903", "San Jose, Ca",  params,
+    config.accessToken, function(error, data){
+      
+    if(error){
+      res.send("An error was thrown: "+ error.message);
+
+    }
+    else{
+
+      console.log(JSON.stringifgy(data));
+      context.results = JSON.stringify(data);
+      console.log(data);
+      res.render('friends', context);
+    }
+  });
+  
+});
+
+
 app.get('/searching' , function(req, res, next){
   var context = {};
   Foursquare.Venues.explore("37.33", "-121.8903", "San Jose, Ca",  {}, handleData);
