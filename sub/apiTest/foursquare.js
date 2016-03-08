@@ -64,10 +64,12 @@ app.use(express.static('public'));
 #   Routes
 ******************************************************/
 
-var globalURL = 'https://api.foursquare.com/v2/venues/search?client_id='+credentials.client_id+'&client_secret='+credentials.client_secret+'&v=20130815&near=';
-
+var begURL = 'https://api.foursquare.com/v2/venues/search?client_id='+config.secrets.clientId+'&client_secret='+config.secrets.clientSecret+'&v=20130815&near=';
+  
 
 /*Load the default routes*/
+  /*Let's build the URL*/
+
 
 /*explore by section*/
 app.get('/explore-section', function (req, res, next){
@@ -84,45 +86,22 @@ app.get('/search-venues', function(req, res, next){
 
 
 
-app.get('/search-now', function(req, res, next){
+app.get('/search', function(req, res, next){
 
 
-	var urlQs=[];
-
-	/*Loop through the queries*/
-	for (var key in req.query){
-		/*Add name value pairs*/
-		urlQs.push({'name' :key, 'value' :req.query[key]})
-	}
-	/*For debugging*/
-	console.log(urlQs);
-	console.log(req.query);
-
-	/*Create array of objects*/
-	var context={};
-	/*Set the form type*/
-	context.formType="GET";
-	/*Set the list to array of params*/
-	context.dataList=urlQs;
-	var location=urlQs[0].value
-	console.log(location);
-	console.log(urlQs[0].value);
-	var radius=urlQs[1].value;
-	console.log(radius);
-	console.log(urlQs[1].value);
-
-	//var context = {};
-
+	var context = {};
+   /*Let's build the URL*/
+  var url = begURL+'&near=Las Vegas, NV&query=creme brulee'
+  console.log(url);
 	/*Request user authentication*/
-	request('https://api.foursquare.com/v2/venues/search?client_id='+credentials.client_id+'&client_secret='+credentials.client_secret+'&v=20130815&near='+location+'&radius='+radius+'&limit=10', handleSearch);
+	request(url, handleSearch);
 
 	function handleSearch(err, response, body){
 		if(!err && response.statusCode < 400){
 			context.results=body;
 			console.log(JSON.parse(body));
 
-
-			res.render('explore', context);
+			res.render('search', context);
 		}else{
 			console.log(err);
 			if(response){
@@ -318,24 +297,6 @@ app.get('/get-token', function(req, res, next){
 });
 
 
-app.get('/search', function (req, res){
-
-  var context = {};
-  foursquare.search({
-    near: 'West Hollywood, Ca',
-    query: 'donuts'
-  }, function (error, results){
-    if (error){
-      res.send('An error was thrown: '+ error.message);
-    }
-    else{
-      context.results = results;
-      console.log(results.body);
-    }
-  
-
-  });
-});
 
 
 app.get('/login', function(req, res){

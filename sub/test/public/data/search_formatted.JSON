@@ -1,67 +1,3 @@
-
-<div class="container">
-    <div class="jumbotron">
-        <h1>Foursquare API</h1>
-        <p>Let's search for venues with a userless acess call</p>
-    </div>
-    <div class="content">
-        <div class="page-header">
-            <h1>Search Venues</h1>
-        </div>
-
-        <div class="content">
-            <p>I often use the explore feature on Foursquare when I'm interested in finding popular venues or would like recommendations on where to go for certain types of venues like coffee, shopping, arts, etc. This is a great feature if you’re visiting a location and want to know where the locals go.</p>
-
-            <p>If we were to make a direct call to the API without using the Node module, we would need to have our request directed to the following URL:</p>
-            <pre class="prettyprint">
-<code class="prettyprint">https://api.foursquare.com/v2/venues/search</code></pre>
-            <p>To change things up a bit, we are going to call the API directly without using our node module. This will also afford us the ability to call the API without having to pass a latitude, longitude, and access token parameter to succesffully make the call. Since our URL is going to be pretty long, let's start by building the beginning of the URL:</p>
-          <pre class="prettyprint">
-<code class="prettyprint">var begURL = 'https://api.foursquare.com/v2/venues/search?client_id='+config.clientId+'&client_secret='+config.clientSecret+'&v=20130815';</code></pre>
-            <p>In the URL we are building, we are including our client ID, client secret, and the version of the API we are calling. For this example, I am interested in version: 20130815. Since the Foursquare API is always changing, we set the version to a version of the API we expect. To learn more about versioning, you can checkout the official documentation <a href="https://developer.foursquare.com/overview/versioning">site</a>.</p>
-
-
-            <p>Some of the parameters this call takes are the following: near, query. limit, and intent. For a complete list of parameters you can send with the request, please refer to the Foursquare documentation <a href="https://developer.foursquare.com/docs/venues/search">site</a>. </p>
-
-            <p>For this call, I'm going to use the following parameters: near and query. Since we are not going to be using the node foursquare module, we can pass in city and state. Let's build the URL with the parameters:</p>
-
-<pre class="prettyprint">
- /*Let's build the URL*/
-  var url = begURL+'&near=Las Vegas, NV&query=sushi'
-</pre>
-
-    <p>Now that we have the URL we want to use, we can make a request and pass it a call back function. Our call back function will take care of the response we receive from the API. For this call back function, I am to have it render the results into a page instead of printing the JSON object into a console. </p>
-
-<pre class="prettyprint">
-app.get('/search', function(req, res, next){
-    var context = {};
-   /*Let's build the URL*/
-  var url = begURL+'&near=Las Vegas, NV&query=creme brulee'
-
-    /*Make request with url and call back function*/
-    request(url, handleSearch);
-
-    function handleSearch(err, response, body){
-        if(!err && response.statusCode < 400){
-            context.results=body;
-            /*Render response on page*/
-            res.render('search', context);
-        }else{
-            /*Print to the console the error*/
-            console.log(err);
-            if(response){
-                console.log(response.statusCode);
-            }
-            next(err);
-        }     
-    }
-});
-
-</pre>
-
-    <p>Now that we have received the JSON object, we will once again format the string into a readable format by using the JSON formatter we used in the explore example. Below I have pasted the results of Sushi related venues in Las Vegas.</p>
-
-<pre class="prettyprint">
   
    "meta":{  
       "code":200,
@@ -1718,23 +1654,488 @@ app.get('/search', function(req, res, next){
 
             ]
          },
+         {  
+            "id":"4b67552bf964a5209a482be3",
+            "name":"Sushi on Rainbow",
+            "contact":{  
+               "phone":"7022478977",
+               "formattedPhone":"(702) 247-8977"
+            },
+            "location":{  
+               "address":"6870 Spring Mountain Rd",
+               "crossStreet":"Rainbow",
+               "lat":36.12681247785376,
+               "lng":-115.24231762766169,
+               "postalCode":"89146",
+               "cc":"US",
+               "city":"Las Vegas",
+               "state":"NV",
+               "country":"United States",
+               "formattedAddress":[  
+                  "6870 Spring Mountain Rd (Rainbow)",
+                  "Las Vegas, NV 89146",
+                  "United States"
+               ]
+            },
+            "categories":[  
+               {  
+                  "id":"4bf58dd8d48988d1d2941735",
+                  "name":"Sushi Restaurant",
+                  "pluralName":"Sushi Restaurants",
+                  "shortName":"Sushi",
+                  "icon":{  
+                     "prefix":"https:\/\/ss3.4sqi.net\/img\/categories_v2\/food\/sushi_",
+                     "suffix":".png"
+                  },
+                  "primary":true
+               }
+            ],
+            "verified":false,
+            "stats":{  
+               "checkinsCount":738,
+               "usersCount":269,
+               "tipCount":13
+            },
+            "allowMenuUrlEdit":true,
+            "specials":{  
+               "count":0,
+               "items":[  
 
-</pre>   
-          <p>Like our call for exploring venues, our call to search venues returned a similar list of venue details. </p>
-          <ul>
-            <li>Venue hereNow,</li>
-            <li>Venue stats</li>
-            <li>Venue address</li>
-            <li>Venue hours</li>
-            <li>Venue tips</li>
-            <li>Venue website</li>
-            <li>Venue menu</li>
-            <li>Venue rating</li>
-          </ul>
-          <p>For example, for Sushi Roku At Caesars, there  is currently one person checked in there, and over 4000 users have checked in to the venue. Blue Ribbon Sushi Bar & Grill at the Cosmopolitan has had a total of 4758 users checked in and for the win, Sushi Samba at the Palazzo has had over 8300 users checked in to the venue!</p>
-          
+               ]
+            },
+            "hereNow":{  
+               "count":0,
+               "summary":"Nobody here",
+               "groups":[  
 
+               ]
+            },
+            "referralId":"v-1457401308",
+            "venueChains":[  
 
+            ]
+         },
+         {  
+            "id":"4bbd44e6a8cf76b07eafb1fd",
+            "name":"Wakino Sushi Buffet",
+            "contact":{  
 
+            },
+            "location":{  
+               "address":"775 S Grand Central Pkwy Ste 1301",
+               "lat":36.164801126806964,
+               "lng":-115.15761870656232,
+               "postalCode":"89106",
+               "cc":"US",
+               "city":"Las Vegas",
+               "state":"NV",
+               "country":"United States",
+               "formattedAddress":[  
+                  "775 S Grand Central Pkwy Ste 1301",
+                  "Las Vegas, NV 89106",
+                  "United States"
+               ]
+            },
+            "categories":[  
+               {  
+                  "id":"4bf58dd8d48988d111941735",
+                  "name":"Japanese Restaurant",
+                  "pluralName":"Japanese Restaurants",
+                  "shortName":"Japanese",
+                  "icon":{  
+                     "prefix":"https:\/\/ss3.4sqi.net\/img\/categories_v2\/food\/japanese_",
+                     "suffix":".png"
+                  },
+                  "primary":true
+               }
+            ],
+            "verified":false,
+            "stats":{  
+               "checkinsCount":4,
+               "usersCount":4,
+               "tipCount":1
+            },
+            "hasMenu":true,
+            "menu":{  
+               "type":"Menu",
+               "label":"Menu",
+               "anchor":"View Menu",
+               "url":"https:\/\/foursquare.com\/v\/wakino-sushi-buffet\/4bbd44e6a8cf76b07eafb1fd\/menu",
+               "mobileUrl":"https:\/\/foursquare.com\/v\/4bbd44e6a8cf76b07eafb1fd\/device_menu"
+            },
+            "allowMenuUrlEdit":true,
+            "specials":{  
+               "count":0,
+               "items":[  
 
-</div>
+               ]
+            },
+            "hereNow":{  
+               "count":0,
+               "summary":"Nobody here",
+               "groups":[  
+
+               ]
+            },
+            "referralId":"v-1457401308",
+            "venueChains":[  
+
+            ]
+         },
+         {  
+            "id":"4bc296fa920eb7138a7d1c2c",
+            "name":"Mo Mo Sushi",
+            "contact":{  
+               "phone":"7024347440",
+               "formattedPhone":"(702) 434-7440"
+            },
+            "location":{  
+               "address":"550 N Stephanie St",
+               "crossStreet":"sunset",
+               "lat":36.060187216502364,
+               "lng":-115.04569842383685,
+               "postalCode":"89014",
+               "cc":"US",
+               "city":"Henderson",
+               "state":"NV",
+               "country":"United States",
+               "formattedAddress":[  
+                  "550 N Stephanie St (sunset)",
+                  "Henderson, NV 89014",
+                  "United States"
+               ]
+            },
+            "categories":[  
+               {  
+                  "id":"4bf58dd8d48988d1d2941735",
+                  "name":"Sushi Restaurant",
+                  "pluralName":"Sushi Restaurants",
+                  "shortName":"Sushi",
+                  "icon":{  
+                     "prefix":"https:\/\/ss3.4sqi.net\/img\/categories_v2\/food\/sushi_",
+                     "suffix":".png"
+                  },
+                  "primary":true
+               }
+            ],
+            "verified":false,
+            "stats":{  
+               "checkinsCount":655,
+               "usersCount":365,
+               "tipCount":14
+            },
+            "hasMenu":true,
+            "menu":{  
+               "type":"Menu",
+               "label":"Menu",
+               "anchor":"View Menu",
+               "url":"https:\/\/foursquare.com\/v\/mo-mo-sushi\/4bc296fa920eb7138a7d1c2c\/menu",
+               "mobileUrl":"https:\/\/foursquare.com\/v\/4bc296fa920eb7138a7d1c2c\/device_menu"
+            },
+            "allowMenuUrlEdit":true,
+            "specials":{  
+               "count":0,
+               "items":[  
+
+               ]
+            },
+            "hereNow":{  
+               "count":0,
+               "summary":"Nobody here",
+               "groups":[  
+
+               ]
+            },
+            "referralId":"v-1457401308",
+            "venueChains":[  
+
+            ]
+         },
+         {  
+            "id":"4bbd3a8ba8cf76b0d6a0b1fd",
+            "name":"Sushi Tower & Steakhouse",
+            "contact":{  
+               "phone":"7023684336",
+               "formattedPhone":"(702) 368-4336",
+               "twitter":"geishacorp"
+            },
+            "location":{  
+               "address":"4145 S Grand Canyon Dr #104",
+               "crossStreet":"#104",
+               "lat":36.114744634483245,
+               "lng":-115.30765848494585,
+               "postalCode":"89147",
+               "cc":"US",
+               "city":"Las Vegas",
+               "state":"NV",
+               "country":"United States",
+               "formattedAddress":[  
+                  "4145 S Grand Canyon Dr #104 (#104)",
+                  "Las Vegas, NV 89147",
+                  "United States"
+               ]
+            },
+            "categories":[  
+               {  
+                  "id":"4bf58dd8d48988d111941735",
+                  "name":"Japanese Restaurant",
+                  "pluralName":"Japanese Restaurants",
+                  "shortName":"Japanese",
+                  "icon":{  
+                     "prefix":"https:\/\/ss3.4sqi.net\/img\/categories_v2\/food\/japanese_",
+                     "suffix":".png"
+                  },
+                  "primary":true
+               }
+            ],
+            "verified":false,
+            "stats":{  
+               "checkinsCount":521,
+               "usersCount":295,
+               "tipCount":11
+            },
+            "allowMenuUrlEdit":true,
+            "specials":{  
+               "count":0,
+               "items":[  
+
+               ]
+            },
+            "hereNow":{  
+               "count":0,
+               "summary":"Nobody here",
+               "groups":[  
+
+               ]
+            },
+            "referralId":"v-1457401308",
+            "venueChains":[  
+
+            ]
+         },
+         {  
+            "id":"4c87f0636f14a093ba34ac10",
+            "name":"Kaizen Fusion Roll & Sushi",
+            "contact":{  
+               "phone":"7023656195",
+               "formattedPhone":"(702) 365-6195"
+            },
+            "location":{  
+               "address":"4465 W Flamingo Rd",
+               "crossStreet":"Arville",
+               "lat":36.114990383333335,
+               "lng":-115.201431,
+               "postalCode":"89103",
+               "cc":"US",
+               "city":"Las Vegas",
+               "state":"NV",
+               "country":"United States",
+               "formattedAddress":[  
+                  "4465 W Flamingo Rd (Arville)",
+                  "Las Vegas, NV 89103",
+                  "United States"
+               ]
+            },
+            "categories":[  
+               {  
+                  "id":"4bf58dd8d48988d1d2941735",
+                  "name":"Sushi Restaurant",
+                  "pluralName":"Sushi Restaurants",
+                  "shortName":"Sushi",
+                  "icon":{  
+                     "prefix":"https:\/\/ss3.4sqi.net\/img\/categories_v2\/food\/sushi_",
+                     "suffix":".png"
+                  },
+                  "primary":true
+               }
+            ],
+            "verified":false,
+            "stats":{  
+               "checkinsCount":314,
+               "usersCount":188,
+               "tipCount":3
+            },
+            "allowMenuUrlEdit":true,
+            "specials":{  
+               "count":0,
+               "items":[  
+
+               ]
+            },
+            "hereNow":{  
+               "count":0,
+               "summary":"Nobody here",
+               "groups":[  
+
+               ]
+            },
+            "referralId":"v-1457401308",
+            "venueChains":[  
+
+            ]
+         },
+         {  
+            "id":"4f44118219836ed001922110",
+            "name":"Sushi House Manda",
+            "contact":{  
+               "phone":"7023826006",
+               "formattedPhone":"(702) 382-6006"
+            },
+            "location":{  
+               "address":"230 E Sahara Ave",
+               "lat":36.14372,
+               "lng":-115.15442,
+               "cc":"US",
+               "city":"Las Vegas",
+               "state":"NV",
+               "country":"United States",
+               "formattedAddress":[  
+                  "230 E Sahara Ave",
+                  "Las Vegas, NV",
+                  "United States"
+               ]
+            },
+            "categories":[  
+               {  
+                  "id":"4d4b7105d754a06374d81259",
+                  "name":"Food",
+                  "pluralName":"Food",
+                  "shortName":"Food",
+                  "icon":{  
+                     "prefix":"https:\/\/ss3.4sqi.net\/img\/categories_v2\/food\/default_",
+                     "suffix":".png"
+                  },
+                  "primary":true
+               }
+            ],
+            "verified":false,
+            "stats":{  
+               "checkinsCount":1,
+               "usersCount":1,
+               "tipCount":0
+            },
+            "allowMenuUrlEdit":true,
+            "specials":{  
+               "count":0,
+               "items":[  
+
+               ]
+            },
+            "hereNow":{  
+               "count":0,
+               "summary":"Nobody here",
+               "groups":[  
+
+               ]
+            },
+            "referralId":"v-1457401308",
+            "venueChains":[  
+
+            ]
+         },
+         {  
+            "id":"4ba80c6ff964a52010c939e3",
+            "name":"Sandai Sushi Bar",
+            "contact":{  
+               "phone":"7023998282",
+               "formattedPhone":"(702) 399-8282"
+            },
+            "location":{  
+               "address":"6106 W Flamingo Rd",
+               "crossStreet":"Jones",
+               "lat":36.11615516,
+               "lng":-115.2254413,
+               "postalCode":"89103",
+               "cc":"US",
+               "city":"Las Vegas",
+               "state":"NV",
+               "country":"United States",
+               "formattedAddress":[  
+                  "6106 W Flamingo Rd (Jones)",
+                  "Las Vegas, NV 89103",
+                  "United States"
+               ]
+            },
+            "categories":[  
+               {  
+                  "id":"4bf58dd8d48988d111941735",
+                  "name":"Japanese Restaurant",
+                  "pluralName":"Japanese Restaurants",
+                  "shortName":"Japanese",
+                  "icon":{  
+                     "prefix":"https:\/\/ss3.4sqi.net\/img\/categories_v2\/food\/japanese_",
+                     "suffix":".png"
+                  },
+                  "primary":true
+               }
+            ],
+            "verified":false,
+            "stats":{  
+               "checkinsCount":68,
+               "usersCount":59,
+               "tipCount":0
+            },
+            "hasMenu":true,
+            "menu":{  
+               "type":"Menu",
+               "label":"Menu",
+               "anchor":"View Menu",
+               "url":"https:\/\/foursquare.com\/v\/sandai-sushi-bar\/4ba80c6ff964a52010c939e3\/menu",
+               "mobileUrl":"https:\/\/foursquare.com\/v\/4ba80c6ff964a52010c939e3\/device_menu"
+            },
+            "allowMenuUrlEdit":true,
+            "specials":{  
+               "count":0,
+               "items":[  
+
+               ]
+            },
+            "hereNow":{  
+               "count":0,
+               "summary":"Nobody here",
+               "groups":[  
+
+               ]
+            },
+            "referralId":"v-1457401308",
+            "venueChains":[  
+
+            ]
+         }
+      ],
+      "geocode":{  
+         "what":"",
+         "where":"las vegas nv",
+         "feature":{  
+            "cc":"US",
+            "name":"Las Vegas",
+            "displayName":"Las Vegas, NV, United States",
+            "matchedName":"Las Vegas, NV, United States",
+            "highlightedName":"<b>Las Vegas<\/b>, <b>NV<\/b>, United States",
+            "woeType":7,
+            "slug":"las-vegas-nevada",
+            "id":"geonameid:5506956",
+            "longId":"72057594043434892",
+            "geometry":{  
+               "center":{  
+                  "lat":36.17497,
+                  "lng":-115.13722
+               },
+               "bounds":{  
+                  "ne":{  
+                     "lat":36.32397712011264,
+                     "lng":-114.89639282226568
+                  },
+                  "sw":{  
+                     "lat":35.9285367031886,
+                     "lng":-115.35507202148438
+                  }
+               }
+            }
+         },
+         "parents":[  
+
+         ]
+      }
+   }
+}
