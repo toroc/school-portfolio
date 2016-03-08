@@ -49,8 +49,8 @@ app.get('/background', function(req, res, next){
 app.get('/user', function(req, res, next){
 	res.render('user');
 });
-app.get('/user-badges', function(req, res, next){
-  res.render('user-badges');
+app.get('/user-tips', function(req, res, next){
+  res.render('user-tips');
 });
 app.get('/user-friends', function(req, res, next){
   res.render('user-friends');
