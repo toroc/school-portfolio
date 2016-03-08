@@ -10,25 +10,26 @@
         </div>
 
         <div class="content">
-            <p>I often use the explore feature on Foursquare when I'm interested in finding popular venues or would like recommendations on where to go for certain types of venues like coffee, shopping, arts, etc. </p>
+            <p>I often use the explore feature on Foursquare when I'm interested in finding popular venues or would like recommendations on where to go for certain types of venues like coffee, shopping, arts, etc. This is a great feature if you’re visiting a location and want to know where the locals go.</p>
 
             <p>If we were to make a direct call to the API without using the Node module, we would need to have our request directed to the following URL:</p>
             <pre class="prettyprint">
 <code class="prettyprint">https://api.foursquare.com/v2/venues/explore</code></pre>
-            <p>After we make the call to the API, our JSON object will essentially be an array of venues near our current location and perhaps matching a search term.</p>
-            <p>Some of the parameters this call takes are the following: radius, section, query, limit, novelty, and friend vists. For example, section takes any of the following options: drinks, coffee, food, arts, shops, outdoors, sights, trending, or specials. For a complete list of parameters you can send with the request, please refer to the Foursquare documentation <a href="https://developer.foursquare.com/docs/venues/explore">site</a>. </p>
+            <p>We would also need to append all of our parameters to the URL which could get really long. After we make the call to the API, our JSON object will essentially be an array of venues near our current location and perhaps matching a search term.</p>
+
+            <p>Some of the parameters this call takes are the following: radius, section, query, limit, novelty, and friend visits. For example, section takes any of the following options: drinks, coffee, food, arts, shops, outdoors, sights, trending, or specials. For a complete list of parameters you can send with the request, please refer to the Foursquare documentation <a href="https://developer.foursquare.com/docs/venues/explore">site</a>. </p>
 
             <p>For this call, I'm going to use the following parameters: query, and novelty as I'm only interested in finding donut places nearby that I have yet to visit. Let's build the parameters:</p>
 
-<pre class="prettyprint"><code class="prettyprint">
+<pre class="prettyprint">
 /*Build optional params*/
   var params = {};
   params.query = "donuts";
-  params.novelty = "new";</code></pre>
+  params.novelty = "new";</pre>
 
-    <p>Now that I have the parameters I want to use, I can call the API and give it the latitude, longitude, and name of location of interest. Let's go ahead and make the call which will print out our JSON object into the console</p>
+    <p>Now that I have the parameters I want to use, I can call the API and give it the latitude, longitude, and name of location of interest, the parameters I build out, my access token, and call back function. Our call back function will take care of the response we receive from the API. Let's go ahead and make the call which will print out our JSON object into the console:</p>
 
-<pre class="prettyprint"><code class="prettyprint">
+<pre class="prettyprint">
   Foursquare.Venues.explore("37.33", "-121.8903", "San Jose, Ca",  params,
     config.accessToken, function(error, data){
       
@@ -39,12 +40,14 @@
     else{
     /*Display the JSON object*/
       console.log(JSON.stringifgy(data));
-    }</code></pre>
+    }</pre>
 
-    <p>Now that we have received the JSON object, we need to format it into a readable string. Copy and paste the JSON string from the console into the JSON Formmater. Below I have pasted a copy of the beggining bit of the response I received from making the call. The first venue suggested is Psycho Donuts</p>
+    <p>Now that we have received the JSON object, we need to format it into a readable string. Copy and paste the JSON string from the console into the JSON Formmater and click on process. </p>
+    {{!-- geocoder image --}}
+    <p class="center"><img src="img/jsonformatter.png" class="img-fluid" alt="JSON Formatter"></p><br>
+    <p>Below I have pasted a copy of the beggining bit of the response I received from making the call. The first venue suggested is Psycho Donuts</p>
 
- <pre class="prettyprint">
-<code class="prettyprint">
+<pre class="prettyprint">
 "venue":{  
           "id":"4c92850fd2e1a1430116cb26",
           "name":"Psycho Donuts",
@@ -77,11 +80,18 @@
              "message":"Moderate",
              "currency":"$"
           },
-
-
-</code>
 </pre>   
-
+          <p>Our response returns a list of venues, along with some pretty interested details about each venue. Some of the details you will find in the response include the following: </p>
+          <ul>
+            <li>Venue stats</li>
+            <li>Venue address</li>
+            <li>Venue hours</li>
+            <li>Venue tips</li>
+            <li>Venue website</li>
+            <li>Venue menu</li>
+            <li>Venue rating</li>
+          </ul>
+          <p>For example, for Psycho Donuts, there are 44 tips on Foursquare, and over 2400 users have checked into the venue. There was also a recommendation for Philz Coffee which apparently has vegan donuts!   For a full view of the response, you can download it <a href="data/explore_formatted.JSON">here</a>.</p>
 
 
 
