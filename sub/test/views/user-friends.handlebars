@@ -1,94 +1,99 @@
-<div class="page-header">
-  <h1>User's Friends <br>
-    <small>Feeling a bit stalkerish.</small></h1>
-</div>
-</div>
-<div class="content">
+<div class="container">
+    <div class="jumbotron">
+        <h1>Foursquare API</h1>
+        <p>Feeling a bit stalkerish.</p>
+    </div>
+    <div class="content">
+        <div class="page-header">
+            <h1>User's Friends</h1>
+        </div>
 
+        <div class="content">
+            <p>I often use the explore feature on Foursquare when I'm interested in finding popular venues or would like recommendations on where to go for certain types of venues like coffee, shopping, arts, etc. This is a great feature if you’re visiting a location and want to know where the locals go.</p>
 
+            <p>If we were to make a direct call to the API without using the Node module, we would need to have our request directed to the following URL:</p>
+            <pre class="prettyprint">
+<code class="prettyprint">https://api.foursquare.com/v2/users/USER_ID/friends</code></pre>
+            <p>We would also need to append all of our parameters to the URL which could get really long. After we make the call to the API, our JSON object will essentially be an array of venues near our current location and perhaps matching a search term.</p>
 
-<p>Foursquare provides two types of accesses to their API: userless access and authenticated access. Up until now we have been doing userless access calls to get data from the API. If we want to get details about a foursquare user like the user's checkin history, we will need request an access token from foursquare. Access tokens will allow us to make requests on behalf of the user.
-</p>
-<h3>Requesting access token</h3>
+            <p>Some of the parameters this call takes are the following: radius, section, query, limit, novelty, and friend visits. For example, section takes any of the following options: drinks, coffee, food, arts, shops, outdoors, sights, trending, or specials. For a complete list of parameters you can send with the request, please refer to the Foursquare documentation <a href="https://developer.foursquare.com/docs/venues/explore">site</a>. </p>
 
-<p>Requesting an access token from Foursquare will involve a two-step process: </p>
-<ol>
-    <li>We will need to redirect the user to the following URL, where they will be prompted if they would like to authorize our application to get their token.</li>
-    <pre class="prettyprint"><code class="prettyprint">https://foursquare.com/oauth2/authenticate?client_id=CLIENT_ID&response_type=token&redirect_uri=YOUR_REGISTERED_REDIRECT_URI</code></pre>
-    <li>If the user accepts, they will be redirected back to our redirect URI, where we will need to parse the token received in the URL and save it. The URL will look something like this:</li>
-    <pre class="prettyprint"><code class="prettyprint">http://localhost:3000/callback?code=USER-ACCESS-TOKEN-HERE#_=</code></pre>
-</ol>
+            <p>For this call, I wont be using any parameters. But we will need to call the function with a userID</p>
 
-
-<h3>Getting a user's access token with Node</h3>
-
-<p>If you have installed the Node wrapper</p>
-
-
-<h3>Using the user's access token to make calls</h3>
-<p>Now that we have the user's access token, we can use the token to make calls on behalf of the user.</p>
-
-
-
-
-
-
-<h3>Getting a user's friends </h3>
-{{!-- Code --}}
 <pre class="prettyprint">
-<code class="prettyprint">
-    https://api.foursquare.com/v2/users/self?oauth_token=ACCESSTOEKEN&v=20160304
-</code>
-</pre>
+/*Build optional params*/
+  var params = {};
+  params.query = "donuts";
+  params.novelty = "new";</pre>
 
+    <p>Now that I have the parameters I want to use, I can call the API and give it the latitude, longitude, and name of location of interest, the parameters I build out, my access token, and call back function. Our call back function will take care of the response we receive from the API. Let's go ahead and make the call which will print out our JSON object into the console:</p>
 
-<p>I would display my venue history, but since I've checked in at over 1100 venues and checked in over 1300 times, I'll just list some of the highlights: </p>
-
-
-
-<p>Making this call will return an array of venues</p>
-
-<h3>Javascript to make this call:</h3>
-
-
-
-<h3>Response from Foursquare:</h3>
 <pre class="prettyprint">
-<code class="prettyprint">
-{
-            "id":"525eeb3811d2c49bf03e23ec",
-            "name":"Toby's Estate Coffee",
-            "contact":{ },
-            "location":{ },
-            "categories":[ ],
-            "verified":true,
-            "stats":{ },
-            "url":"http:\/\/www.tobysestate.com",
-            "allowMenuUrlEdit":true,
-            "specials":{ },
-            "storeId":"",
-            "hereNow":{ },
-            "referralId":"v-1457052088",
-            "venueChains":[ ]
-         },
+  Foursquare.Venues.explore("37.33", "-121.8903", "San Jose, Ca",  params,
+    config.accessToken, function(error, data){
+      
+    if(error){
+      res.send("An error was thrown: "+ error.message);
+
+    }
+    else{
+    /*Display the JSON object*/
+      console.log(JSON.stringifgy(data));
+    }</pre>
+
+    <p>Now that we have received the JSON object, we need to format it into a readable string. Copy and paste the JSON string from the console into the JSON Formmater and click on process. </p>
+
+    <p>Below I have pasted a copy of the beggining bit of the response I received from making the call. The first venue suggested is Psycho Donuts</p>
+
+<pre class="prettyprint">
+"venue":{  
+          "id":"4c92850fd2e1a1430116cb26",
+          "name":"Psycho Donuts",
+          "contact":{  
+             "phone":"4085331023",
+             "formattedPhone":"(408) 533-1023"
+          },
+"categories":[  
+         {  
+            "id":"4bf58dd8d48988d148941735",
+            "name":"Donut Shop",
+            "pluralName":"Donut Shops",
+            "shortName":"Donuts",
+            "icon":{  
+               "prefix":"https://ss3.4sqi.net/img/categories_v2/food/donuts_",
+               "suffix":".png"
+            },
+            "primary":true
+         }
+      ],
          {
-            "id":"4aa52d50f964a520834720e3",
-            "name":"Stumptown Coffee Roasters",
-            "contact":{ },
-            "location":{ },
-            "categories":[ ],
-            "verified":true,
-            "stats":{ },
-            "url":"http:\/\/stumptowncoffee.com",
-            "allowMenuUrlEdit":true,
-            "specials":{ },
-            "venuePage":{ },
-            "hereNow":{ },
-            "referralId":"v-1457052088",
-            "venueChains":[ ]
-         },
-</code>
-</pre>
+           "stats":{  
+                     "checkinsCount":4239,
+                     "usersCount":2498,
+                     "tipCount":44
+                  },
+          "url":"http://www.psycho-donuts.com",
+          "price":{  
+             "tier":2,
+             "message":"Moderate",
+             "currency":"$"
+          },
+</pre>   
+          <p>Our response returns a list of friends, along with some  details about each friend. Some of the details you will find in the response include the following: </p>
+          <ul>
+            <li>Friends' first name</li>
+            <li>Friends' last name</li>
+            <li>Friends' gender</li>
+            <li>Friends' home city</li>
+            <li>Friends' bio</li>
+            <li>Friends'count of tips</li>
+          </ul>
+          <p>One of my friends has left 117 tips. Of my 41 friends, I have 7 friends from Florida, 6 from Washington, and 5 from New York.  </a>.</p>
 
-<h3>Response breakdown:</h3>
-<p>We can get the following items from </p>
+
+
+
+</div>
+
+
+
