@@ -119,7 +119,7 @@ app.get('/friends' , function(req, res, next){
   params.query = "donuts";
   params.novelty = "new";
 
-  Foursquare.Users.getFriends("1065286", null,
+  Foursquare.Users.getFriends("self", null,
     config.accessToken, function(error, data){
       
     if(error){
