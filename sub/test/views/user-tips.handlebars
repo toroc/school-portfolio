@@ -1,0 +1,88 @@
+<div class="container">
+    <div class="jumbotron">
+        <h1>Foursquare API</h1>
+        <p>Feeling a bit stalkerish.</p>
+    </div>
+    <div class="content">
+        <div class="page-header">
+            <h1>User's Tips</h1>
+        </div>
+
+        <div class="content">
+            <p>While I don’t often look up a user specifically to read through their tips, the Foursquare API can help us retrieve a list of tips from a Foursquare user. Since this a user authenticated type of call, we can only make the call with a USER ID as long as we have that’s user’s access token. Like the previous example, I’ll be using my own USER ID since I have granted my app access to my account. </p>
+
+            <p>If we were to make a direct call to the API without using the Node module, we would need to have our request directed to the following URL:</p>
+            <pre class="prettyprint">
+<code class="prettyprint">https://api.foursquare.com/v2/users/USER_ID/tips</code></pre>
+            
+              <p>Some of the parameters this request takes are the following: 
+              	<ul>
+              		<li>USER_ID</li>
+              		<li>Sort: recent, nearby, or popular</li>
+              		<li>latitude, longitude: only required if sort is by nearby</li>
+              		<li>limit: up to 500</li>
+              	</ul>
+              	 For a complete list of parameters you can send with the request, please refer to the Foursquare documentation <a href="https://developer.foursquare.com/docs/users/tips">site</a>. </p>
+
+              	 <p>Let's start by building our parameters, where I have decided my tips should be sorted by popularity: 
+<pre class="prettyprint">
+/*Build optional params*/
+  var params = {};
+  params.sort = "popular"
+              	 	</pre></p>
+
+
+    <p>I can call the API with my USER_ID, pass the params variable, pass it my access token, and a call back function. Our call back function will take care of the response we receive from the API and this time, instead of printing it to the console, I'll render it into a page. </p>
+
+<pre class="prettyprint">
+ 
+ Foursquare.Users.getTips("1065286", params,
+    config.accessToken, function(error, data){
+      
+    if(error){
+      res.send("An error was thrown: "+ error.message);
+    }
+    else{
+
+      context.results = JSON.stringify(data);
+      res.render('tips', context);
+    }
+  });
+</pre>
+
+    <p>Like we have done before, let's format the JSON response. </p>
+
+    <p>Due to confidentiality, I won't be posting the list of my friends, as the list does return identifiable information. Our response returns a list of friends, along with some  details about each friend. Some of the details you will find in the response include the following: </p>
+          <ul>
+            <li>Tip ID</li>
+            <li>Tip Text</li>
+            <li>Likes:</li>
+            <ul>
+            	<li>Count</li>
+            	<li>Groups: the people who have liked the tips</li>
+            </ul>
+            <li>Venue info:</li>
+            <ul>
+            	<li>ID</li>
+            	<li>Name</li>
+            	<li>Phone</li>
+            </ul>
+            <li>Location info:</li>
+            <ul>
+            	<li>Address</li>
+            	<li>City</li>
+            	<li>State</li>
+            	<li>Country</li>
+            </ul>
+            <li>Much much more!</li>
+          </ul>
+          
+          <p>One of my friends has left 117 tips! Of my 41 friends, I have 7 friends from Florida, 6 from Washington, and 5 from New York. </p>
+
+
+
+
+</div>
+
+
+
