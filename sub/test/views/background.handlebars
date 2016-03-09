@@ -1,10 +1,10 @@
 <div class="container">
 	<div class="jumbotron">
-		<h1>Foursquare API</h1>
-		<p>Let's get started</p>
+		<h1>How-To: Foursquare API</h1>
+		<p>Let's learn a bit more before we jump into calls.</p>
 	</div>
 	<div class="content">
-		<p>Let's review how to use the node foursquare module, the types of API calls we can make, and some tools that will make our life a bit easier.</p>
+		<p>In this section, we will review how to use the node foursquare module, the types of API calls we can make, and some tools that will make our life a bit easier.</p>
 		<div class="page-header">
 			<h1>Understanding node-foursquare</h1>
 		</div>
@@ -20,22 +20,16 @@
 				<li>
 					<code>search(lat, lng, near, params, accessToken, callback)</code>
 				</li>
-				<li>
-					<code>getTrending(lat, lng, params, accessToken, callback)</code>
-				</li>
 			</ul>
 
 			<p>In regards to Users, we will be using the following library functions:</p>
 
 			<ul>
 				<li>
-					<code>getCheckins(userId, params, accessToken, callback)</code>
+					<code>getTips(userId, params, accessToken, callback) </code>
 				</li>
 				<li>
 					<code>getFriends(userId, params, accessToken, callback)</code>
-				</li>
-				<li>
-					<code>getVenueHistory(userId, params, accessToken, callback)</code>
 				</li>
 			</ul>
 			
@@ -104,7 +98,8 @@ app.get('/callback', function (req, res){
 		</div>
 
 	<div class="page-header">
-			<h1>Tools </h1>
+			<h1>Tools: <small>Geocoder & JSON Formatter</small></h1>
+
 	</div>
 		<div class="content">
 			<p>When using the Node module for the foursquare API, we will be required to enter <b>latitude</b> and <b>longitude</b> of the user’s location for each call. If we decide to make the direct requests ourselves, we can skip the latitude and longitude requires as long as we fulfill the near parameter which takes in a City, State.</p>
