@@ -1,9 +1,11 @@
 <div class="container">
     <div class="jumbotron">
-        <h1>Foursquare API</h1>
-        <p>Feeling a bit stalkerish.</p>
+        <h1>How-To: Foursquare API</h1>
+        <p>Let's get details about a user's tips on Foursquare.</p>
     </div>
     <div class="content">
+    	<p>In this section, we will be using the following foursquare node module library function to make our GET request to the API:</p>
+      <code>getTips(userId, params, accessToken, callback)</code>
         <div class="page-header">
             <h1>User's Tips</h1>
         </div>
@@ -49,10 +51,16 @@
     }
   });
 </pre>
+    <p>Like we have done before, let's format the JSON response and jump into the various details we get from the response. The beginning of the response indicates the count of tips left by the user and each tip will be embedded into items: </p>
 
-    <p>Like we have done before, let's format the JSON response. </p>
+<pre  class="prettyprint">
+{
+"tips":{
+  "count":98,
+  "items":[
+</pre>
 
-    <p>Due to confidentiality, I won't be posting the list of my friends, as the list does return identifiable information. Our response returns a list of friends, along with some  details about each friend. Some of the details you will find in the response include the following: </p>
+    <p> As expected, our response returned a list of tips, along with some  details about each tip. Some of the details you will find in the response include the following: </p>
           <ul>
             <li>Tip ID</li>
             <li>Tip Text</li>
@@ -76,8 +84,41 @@
             </ul>
             <li>Much much more!</li>
           </ul>
-          
-          <p>One of my friends has left 117 tips! Of my 41 friends, I have 7 friends from Florida, 6 from Washington, and 5 from New York. </p>
+
+          <p>Here are some of the tips, I have added to Foursquare:</p>
+
+<pre class="prettyprint">
+"id":"4d6acd12d2596ea80d756a20",
+    "createdAt":1298844946,
+    "text":"Do not try to park your SUV in the garages...the garages are tiny and youll end up having to pay for repairs for your car.",
+    "type":"user",
+    "canonicalUrl":"https://foursquare.com/item/4d6acd12d2596ea80d756a20",
+            
+"id":"4d8a4e2126a36ea84a15f2ad",
+    "createdAt":1300909601,
+    "text":"The pharmacy is great. Prescriptions are usually ready in 20 minutes.",
+    "type":"user",
+    "canonicalUrl":"https://foursquare.com/item/4d8a4e2126a36ea84a15f2ad",
+
+"id":"4bec998170c603bb7f639bb4",
+    "createdAt":1273796993,
+    "text":"Bring cash! They don't accept cards.",
+    "type":"user",
+    "canonicalUrl":"https://foursquare.com/item/4bec998170c603bb7f639bb4",
+
+"id":"4e0512b3483b98d417015947",
+    "createdAt":1308955315,
+    "text":"The massage chair is amazinggggg",
+    "type":"user",
+    "canonicalUrl":"https://foursquare.com/item/4e0512b3483b98d417015947",
+
+"id":"4bd80f5d70c603bb0a8399b4",
+    "createdAt":1272450909,
+    "text":"Go to the 4th floor if you need peace and quiet.",
+    "type":"user",
+    "canonicalUrl":"https://foursquare.com/item/4bd80f5d70c603bb0a8399b4",
+</pre>
+          <p></p>
 
 
 
