@@ -46,9 +46,6 @@ app.get('/background', function(req, res, next){
   res.render('background');
 });
 
-app.get('/user', function(req, res, next){
-	res.render('user');
-});
 app.get('/user-tips', function(req, res, next){
   res.render('user-tips');
 });
@@ -57,15 +54,7 @@ app.get('/user-friends', function(req, res, next){
 });
 
 app.get('/user-history', function(req, res, next){
-  res.render('user-badges');
-});
-
-app.get('/search', function(req, res, next){
-  res.render('search');
-});
-
-app.get('/venues', function(req, res, next){
-  res.render('venues');
+  res.render('user-history');
 });
 
 app.get('/venues-search', function(req, res, next){
