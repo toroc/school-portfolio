@@ -23,7 +23,7 @@ app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
 /*Set up port*/
-app.set('port', 3005);
+app.set('port', 3001);
 
 
 /*Set up static files*/
