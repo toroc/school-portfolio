@@ -4,6 +4,7 @@
 #   File Created: 03/09/2016
 #   Last Modified: 03/09/2016
 #   Filename: otp_enc.c
+#	Usage: otp_enc <plainFile> <keyFile> <portNumber>
 #   Description:
 #
 #
@@ -47,7 +48,7 @@ struct session{
 	int dataSocket;
 	int socketFD; /*client socket endpoint file descriptor*/
 	int serverFD; /*Socket file descriptor*/
-	struct sockaddr_in serverAdrr;
+	struct sockaddr_in serverAddr;
 	struct hostent *serverIP;
 };
 
@@ -68,8 +69,11 @@ int validChar(char curChar);
 
 
 void error(const char *msg);
+void debugTrace(const char *msg, int line);
 
 void startClient(struct session *thisSession);
+
+void sendComms(struct session *thisSession, struct fileStruct *thisFile);
 
 void sendFile(struct session *thisSession);
 void sendKey(struct session *thisSession);
@@ -165,6 +169,11 @@ void checkCommandLine(int argcount, char *args[])
 		printf("Usage: %s <plainFile> <keyFile> <portNumber>\n",args[0]);
 		exit(2);
 	}
+}
+
+
+void debugTrace(const char *msg, int line){
+	printf("%s from line # %d \n", msg, line);
 }
 
 /******************************************************
@@ -287,6 +296,7 @@ void validateFiles(struct session *thisSession)
 void startClient(struct session *thisSession)
 {
 
+	debugTrace("startClient ", 299);
 	/*Create client socket endpoint*/
 	thisSession->socketFD=(AF_INET,SOCK_STREAM, 0);
 
@@ -306,14 +316,19 @@ void startClient(struct session *thisSession)
 
 	/*Set up addresss*/
 	thisSession->serverAddr.sin_family = AF_INET;
-	thisSession->serverAdrr.sin_port=htons(thisSession->serverPort);
+	thisSession->serverAddr.sin_port=htons(thisSession->serverPort);
+
+	debugTrace("before connect", 321);
+
+	/*Connect to server*/
+	int result = connect(thisSession->socketFD, (struct sockaddr *) &thisSession->serverAddr, sizeof(thisSession->serverAddr));
 
 	/*Ensure it worked*/
+	if (result < 0){
+		fprintf(stderr, "Error: unable to connect to server.\n");
+	}
 
-
-	/*Bind server socket*/
-
-
+	debugTrace("after connect", 331);
 }
 
 /******************************************************
@@ -324,6 +339,47 @@ void startClient(struct session *thisSession)
 #
 #   @return: n/a
 ******************************************************/
+void sendComms(struct session *thisSession, struct fileStruct *thisFile)
+{
+	/*File descriptor for reading file*/
+	FILE *fileFD;
+	int result;
+
+	/*buffer to store file contents*/
+	char buffer[MAX_PACKET];
+
+
+	/*Open file*/
+	fileFD=fopen(thisFile->fileName,"r");
+
+	if(fileFD==NULL){
+		fprintf(stderr,"Error: unable to open file.\n");
+	}
+
+
+
+	/*Continously load file items to buffer*/
+	while(fgets(buffer, sizeof(buffer), fileFD)!= NULL){
+
+		/*Send file to client*/
+		result=send(thisSession->dataSocket, buffer, strlen(buffer),0);
+
+		/*Ensure send worked*/
+		if(result<0){
+			fprintf(stderr,"Error: unable to send file data to client.");
+		}
+
+		/*Wait before sending next data */
+		usleep(10);
+	}
+
+	printf("done sending plain text file");
+
+	/*Close the file*/
+	fclose(fileFD);
+
+}
+
 void sendFile(struct session *thisSession)
 {
 	/*File descriptor for reading file*/
