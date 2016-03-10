@@ -150,7 +150,7 @@ int fileCharCount(const char *fileName)
 	/*close file descriptor*/
 	fclose(fileP);
 
-	printf(charCount);
+	printf("%d\n",charCount);
 
 	return charCount;
 
@@ -158,7 +158,7 @@ int fileCharCount(const char *fileName)
 void validateFileKey(struct session *thisSession)
 {
 
-	printf("About to get char count in files \n"):
+	printf("About to get char count in files \n");
 	/*Get count of plain file and key file*/
 	thisSession->plainLen=fileCharCount(thisSession->plainFile);
 	thisSession->keyLen=fileCharCount(thisSession->keyFile);
