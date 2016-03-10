@@ -5,13 +5,13 @@
 #   Last Modified: 03/09/2016
 #   Filename: otp_enc_d.c
 #	Usage: otp_enc_d <portNumber>
-#   Description:  
-#       
-#       
-#       
-#       
-#       
-#       
+#   Description:
+#
+#
+#
+#
+#
+#
 #
 #
 ******************************************************/
@@ -22,7 +22,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
+
 
 #define MAX_PACKET 1000
 #define MAX_NAME 50
@@ -30,9 +31,9 @@
 typedef struct serverSession serverSession;
 
 struct serverSession{
-	int serverSocket; /*Server socket descriptor*/
+	int serverSocket; /*Server socket for listening*/
 	int serverPort; /*int to store server port*/
-	int clientSocket;
+	int clientSocket; /*client socket for connection*/
 	struct sockaddr_in serverAddr;
 	struct sockaddr_in clientAddr;
 
@@ -40,18 +41,21 @@ struct serverSession{
 	int plainLen;/*length of plain file text*/
 	char *keyFile; /*string to store key file name*/
 	int keyLen; /*length of keymfile text*/
-	
+
 	char *cipherTxt;/*string to store cipher text*/
 	int cipherLen; /*length of cipher text*/
 
 };
 
+void debugTrace(const char *msg, int line);
 /*Data Structure Functions*/
 serverSession* createSession();
 void freeSession(struct serverSession *thisSession);
 
 
-void startServer(struct serverSession *thisSession, int ftPort);
+void startServer(struct serverSession *thisSession);
+void acceptConnection(struct serverSession *thisSession);
+void handleConnection(struct serverSession *thisSession);
 
 void checkCommandLine(int argcount, char *args[]);
 
@@ -72,21 +76,23 @@ int main(int argc, char *argv[])
 
 	/*Store port #*/
 	curSession->serverPort=atoi(argv[1]);
-	
+
 	/*Setup server and listen for connections*/
 	startServer(curSession);
-	
+
 	/**/
-	while(true)
+	while(1)
 	{
 
 		/*Start connection*/
+		acceptConnection(curSession);
 
 		/*Handle request*/
+		handleConnection(curSession);
 	}
 
 	/**/
-	
+
 
 
 	return 0;
@@ -97,7 +103,9 @@ int main(int argc, char *argv[])
 
 }
 
-
+void debugTrace(const char *msg, int line){
+	printf("%s from line # %d", msg, line);
+}
 
 void error(const char *msg)
 {
@@ -122,7 +130,7 @@ serverSession* createSession(){
 	theSession->plainLen=0;
 	theSession->keyFile=(char*)malloc(sizeof(char)*MAX_NAME);
 	theSession->keyLen=0;
-	
+
 	return theSession;
 }
 
@@ -159,6 +167,8 @@ void checkCommandLine(int argcount, char *args[])
 void startServer(struct serverSession *thisSession)
 {
 
+	debugTrace("begin startServer\n", 171);
+
 	int optVal =1;
 	/*Create server socket*/
 	thisSession->serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -191,8 +201,57 @@ void startServer(struct serverSession *thisSession)
 		error("Error: unable to bind to host address.\n");
 	}
 
+	debugTrace("before listen\n", 205);
 	/*Listen for incoming connections*/
 	listen(thisSession->serverSocket, 5);
 }
+
+void acceptConnection(struct serverSession *thisSession)
+{
+	debugTrace("before accept connection \n", 212);
+
+	socklen_t clientLength = sizeof(thisSession->clientAddr);
+
+	/*Accept incoming connection*/
+	thisSession->clientSocket = accept(thisSession->serverSocket, (struct sockaddr*) &thisSession->clientAddr, &clientLength);
+
+	/*Ensure it worked*/
+	if(thisSession->clientSocket < 0){
+		error("Error: unable to accept connection.\n");
+	}
+
+	debugTrace("After accept connection \n", 224);
+
+
+}
+
+void handleConnection(struct serverSession *thisSession)
+{
+	pid_t childPID;
+
+	/*Fork*/
+	childPID  = fork();
+
+	/*Check for error*/
+	if(childPID < 0){
+		error("Error: unable to fork new process.\n");
+
+	}
+
+	/*Inside child*/
+	if(childPID ==0){
+
+		/*read message*/
+
+
+		/*read key*/
+
+
+		/*encode message*/
+	}
+
+}
+
+
 
 void encode(char *plain, char *key, char *cipher);
