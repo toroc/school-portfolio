@@ -5,13 +5,13 @@
 #   Last Modified: 03/09/2016
 #   Filename: keygen.c
 #	Excecution: keygen keylength
-#   Description:  
-#       
-#       
-#       
-#       
-#       
-#       
+#   Description:
+#
+#
+#
+#
+#
+#
 #
 #
 ******************************************************/
@@ -22,18 +22,19 @@
 #include <string.h>
 #include <time.h>
 
-#define OPS = 27 /*Operations*/
+#define OPS = 27
+
 
 void checkCommandLine(int argcount, char *args[]);
 void generateKey(int keyLen);
-int main(int argc, char*argv)
+int main(int argc, char*argv[])
 {
 
 	checkCommandLine(argc, argv);
 	/*Store length*/
 	int keyLen = atoi(argv[1]);
 	/*DEBUG*/
-	print("Debug: keyLen %d \n", keyLen);
+	printf("Debug: keyLen %d \n", keyLen);
 
 	/*Seed for rand*/
 	srand(time(NULL));
@@ -65,21 +66,23 @@ void checkCommandLine(int argcount, char *args[])
 
 void generateKey(int keyLen){
 
-	char alphabet[OPS]="ABCDEFGH IJKLMNOPQRSTUVWXYZ";
+	char alphabet[27]="ABCDEFGH IJKLMNOPQRSTUVWXYZ";
 	/*String to store generated key*/
 	char keyString[keyLen+1];
+	char curChar;
+	int randIndex;
 	int i=0;
 
 	/*Loop through*/
 
 	while(i < keyLen){
 
-		int randIndex = rand() % OPS;
-		char curChar = alphabet[randIndex];
-		keyString[i++]=cur;
+		randIndex = rand() % 27;
+		curChar = alphabet[randIndex];
+		keyString[i++]=curChar;
 	}
 	/*Append null char*/
-	keyString[i]="\0";
+	keyString[i]='\0';
 	/*Print to console */
 	printf("%s\n", keyString);
 }
