@@ -41,16 +41,14 @@ struct fileStruct{
 struct session{
 	struct fileStruct *plainFile;
 	struct fileStruct *keyFile;
-	char *plainFileStr; /*string to store file name*/
-	int plainLen;/*length of plain file text*/
-	CTYPE plainChars; /*valid chars*/
-	char *keyFileStr; /*string to store key file name*/
-	int keyLen; /*length of keymfile text*/
-	CTYPE keyChars; /*valid chars*/
 	int serverPort; /*int to store server port*/
 	char *cipherTxt;/*string to store cipher text*/
 	int cipherLen; /*length of cipher text*/
 	int dataSocket;
+	int socketFD; /*client socket endpoint file descriptor*/
+	int serverFD; /*Socket file descriptor*/
+	struct sockaddr_in serverAdrr;
+	struct hostent *serverIP;
 };
 
 /*Data Structure Functions*/
@@ -61,13 +59,17 @@ void freeSession(struct session *thisSession);
 
 void checkCommandLine(int argcount, char *args[]);
 
-void error(const char *msg);
-void validateFileKey(struct session *thisSession);
+
+void validateFiles(struct session *thisSession);
 
 /*File and Key validation helper functions*/
 void fileCharValidation(struct fileStruct *thisFile);
 int validChar(char curChar);
 
+
+void error(const char *msg);
+
+void startClient(struct session *thisSession);
 
 void sendFile(struct session *thisSession);
 void sendKey(struct session *thisSession);
@@ -82,13 +84,11 @@ int main(int argc, char *argv[])
 
 	/*save commands*/
 	curSession->plainFile->fileName=argv[1];
-	curSession->plainFileStr=argv[1];
 	curSession->keyFile->fileName=argv[2];
-	curSession->keyFileStr=argv[2];
 	curSession->serverPort=atoi(argv[3]);
 
 	/**/
-	validateFileKey(curSession);
+	validateFiles(curSession);
 
 
 	return 0;
@@ -136,11 +136,6 @@ session* createSession(){
 	theSession->plainFile=createFileStruct();
 	theSession->keyFile=createFileStruct();
 
-	theSession->plainFileStr=(char*)malloc(sizeof(char)*MAX_NAME);
-	theSession->plainLen=0;
-	theSession->keyFileStr=(char*)malloc(sizeof(char)*MAX_NAME);
-	theSession->keyLen=0;
-
 	return theSession;
 }
 
@@ -168,13 +163,22 @@ void checkCommandLine(int argcount, char *args[])
 {
 	if(argcount<=3){
 		printf("Usage: %s <plainFile> <keyFile> <portNumber>\n",args[0]);
-		exit(1);
+		exit(2);
 	}
 }
 
+/******************************************************
+#   	funcName
+#   @desc:
+#
+#   @param:
+#
+#   @return: n/a
+******************************************************/
 
 void fileCharValidation(struct fileStruct *thisFile)
 {
+	printf("char & count validation \n");
 	/*File descriptor*/
 	FILE *fileP;
 	int charCount=0;
@@ -188,6 +192,7 @@ void fileCharValidation(struct fileStruct *thisFile)
 
 	char c;
 	while(1){
+
 		c = fgetc(fileP);
 		if(c == EOF){
 			/*reached end of file*/
@@ -204,7 +209,7 @@ void fileCharValidation(struct fileStruct *thisFile)
 		++charCount;
 	}
 
-	/*Set char count*/
+	/*Set char count and whether valid chars*/
 	thisFile->charCount=charCount;
 	thisFile->validChars=VALID;
 
@@ -217,48 +222,108 @@ void fileCharValidation(struct fileStruct *thisFile)
 
 }
 
+/******************************************************
+#   	validChar
+#   @desc: helper function returns whether char passed
+#       in as param is valid
+#   @param: char curChar
+#   @return: 1: char is valid, 0: char is invalid
+******************************************************/
 int validChar(char curChar)
 {
-
-	/*Return 1 when valid*/
+	/*Get int value of char*/
 	int charVal=curChar;
 
+	/*Return 1 if space or uppercase letter*/
 	if(charVal == 32 || (charVal >=65 && charVal <=90)){
 		return 1;
 	}
 
+	/*Char not valid*/
+	printf("char not valid\n");
 	return 0;
 }
 
 
-
-void validateFileKey(struct session *thisSession)
+/******************************************************
+#   	validateFiles
+#   @desc: Execute flow for validating for bad chars in
+#		plain and key files, as well as char count,
+#		exit with error if invalid
+#   @param: pointer to session data structure
+#   @return: n/a
+******************************************************/
+void validateFiles(struct session *thisSession)
 {
 
-	printf("About to get char count in files \n");
-	/*Get count of plain file and key file & check for invalid chars*/
+	printf("Validating files \n");
+
+	/*Validate for bad characters*/
 	fileCharValidation(thisSession->plainFile);
-
 	fileCharValidation(thisSession->keyFile);
-
-
-	/*exit with error: if keyfile is shorter than plain file*/
-	if(thisSession->plainFile->charCount > thisSession->keyFile->charCount){
-		printf("Error: key \'%s\' is too short\n", thisSession->keyFile->fileName);
-		exit(1);
-	}
 
 	/*exit with error if files have invalid chars*/
 	if(thisSession->plainFile->validChars == INVALID){
-		printf("Error: invalid characters in file \'%s\'", thisSession->plainFile->fileName);
+		fprintf(stderr,"Error: invalid characters in file \'%s\'", thisSession->plainFile->fileName);
+		exit(1);
 	}
 
 	if(thisSession->keyFile->validChars == INVALID){
-		printf("Error: invalid characters in file \'%s\'", thisSession->keyFile->fileName);
+		fprintf(stderr, "Error: invalid characters in file \'%s\'", thisSession->keyFile->fileName);
+		exit(1);
 	}
+
+	/*exit with error: if keyfile is shorter than plain file*/
+	if(thisSession->plainFile->charCount > thisSession->keyFile->charCount){
+		fprintf(stderr, "Error: key \'%s\' is too short\n", thisSession->keyFile->fileName);
+		exit(1);
+	}
+
 
 }
 
+
+
+void startClient(struct session *thisSession)
+{
+
+	/*Create client socket endpoint*/
+	thisSession->socketFD=(AF_INET,SOCK_STREAM, 0);
+
+	/*Ensure it worked*/
+	if(thisSession->socketFD == -1){
+		fprintf(stderr, "Error: unable to open client socket endpoint.\n");
+		exit(1);
+	}
+
+	/*setup server socket*/
+	thisSession->serverIP=gethostbyname("localhost");
+
+	/*Ensure it worked*/
+	if(thisSession->serverIP == NULL){
+		fprintf(stderr, "Error: unable to resolve server host name.\n");
+	}
+
+	/*Set up addresss*/
+	thisSession->serverAddr.sin_family = AF_INET;
+	thisSession->serverAdrr.sin_port=htons(thisSession->serverPort);
+
+	/*Ensure it worked*/
+
+
+	/*Bind server socket*/
+
+
+}
+
+/******************************************************
+#   	funcName
+#   @desc:
+#
+#   @param:
+#
+#   @return: n/a
+******************************************************/
 void sendFile(struct session *thisSession)
 {
 	/*File descriptor for reading file*/
@@ -299,6 +364,14 @@ void sendFile(struct session *thisSession)
 	fclose(fileFD);
 }
 
+/******************************************************
+#   	funcName
+#   @desc:
+#
+#   @param:
+#
+#   @return: n/a
+******************************************************/
 void sendKey(struct session *thisSession)
 {
 	/*File descriptor for reading file*/
