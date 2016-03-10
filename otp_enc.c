@@ -143,7 +143,14 @@ int fileCharCount(const char *fileName)
 		printf("File failed to open");
 	}
 
-	while(getchar() != EOF){
+	char c;
+	while(1){
+		c = fgetc(fileP);
+		if(c == EOF){
+			/*reached end of file*/
+			break;
+		}
+		/*increment count*/
 		++charCount;
 	}
 
@@ -162,6 +169,12 @@ void validateFileKey(struct session *thisSession)
 	/*Get count of plain file and key file*/
 	thisSession->plainLen=fileCharCount(thisSession->plainFile);
 	thisSession->keyLen=fileCharCount(thisSession->keyFile);
+
+	/*exit with error: if keyfile is shorter than plain file*/
+	if(thisSession->keyLen < thisSession->plainLen){
+		printf("Error: key \'%s\' is too short\n", thisSession->keyFile);
+		exit(1);
+	}
 
 
 }
