@@ -4,7 +4,7 @@
 #   File Created: 03/09/2016
 #   Last Modified: 03/09/2016
 #   Filename: keygen.c
-#	Excecution: keygen keylength
+#	Usage: keygen <keylength>
 #   Description: Prints to standard output a random key
 #		of length received from command
 #
@@ -52,7 +52,7 @@ int main(int argc, char*argv[])
 ******************************************************/
 void checkCommandLine(int argcount, char *args[])
 {
-	if(argcount<2){
+	if(argcount<2 || argcount > 2){
 		fprintf(stderr, "Usage: %s keylength\n",args[0]);
 		exit(1);
 	}
