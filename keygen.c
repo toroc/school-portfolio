@@ -5,13 +5,8 @@
 #   Last Modified: 03/09/2016
 #   Filename: keygen.c
 #	Excecution: keygen keylength
-#   Description:
-#
-#
-#
-#
-#
-#
+#   Description: Prints to standard output a random key
+#		of length received from command
 #
 #
 ******************************************************/
@@ -22,7 +17,7 @@
 #include <string.h>
 #include <time.h>
 
-#define OPS = 27
+#define OP_NUM 27
 
 
 void checkCommandLine(int argcount, char *args[]);
@@ -45,9 +40,8 @@ int main(int argc, char*argv[])
 	return 0;
 
 
-
-
 }
+
 /******************************************************
 #   checkCommandLine
 #   @desc: ensure program is executed with correct
@@ -64,9 +58,16 @@ void checkCommandLine(int argcount, char *args[])
 	}
 }
 
+/******************************************************
+#   generateKey
+#   @desc: generate random key based on length received
+#       from execution command
+#   @param: int length key string should be
+#   @return: n/a
+******************************************************/
 void generateKey(int keyLen){
 
-	char alphabet[27]="ABCDEFGH IJKLMNOPQRSTUVWXYZ";
+	char alphabet[OP_NUM]="ABCDEFGH IJKLMNOPQRSTUVWXYZ";
 	/*String to store generated key*/
 	char keyString[keyLen+1];
 	char curChar;
@@ -74,15 +75,18 @@ void generateKey(int keyLen){
 	int i=0;
 
 	/*Loop through*/
-
 	while(i < keyLen){
-
+		/*Get a random index from 0-27*/
 		randIndex = rand() % 27;
+		/*Set the curChar to char at randIndex*/
 		curChar = alphabet[randIndex];
+		/*Set the curChar to index of keyString and increment i*/
 		keyString[i++]=curChar;
 	}
+
 	/*Append null char*/
 	keyString[i]='\0';
+
 	/*Print to console */
-	printf("%s\n", keyString);
+	fprintf(stdout, "%s\n", keyString);
 }
