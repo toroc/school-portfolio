@@ -125,6 +125,8 @@ int main(int argc, char *argv[])
 
 void debugTrace(const char *msg, int line){
 	printf("OTP_ENC_D > %s from line # %d \n", msg, line);
+
+	fflush(stdout);
 }
 
 void error(const char *msg)
@@ -333,8 +335,6 @@ void handleConnections(struct serverSession *thisSession)
 		handleChildProcess(thisSession, thisChild);
 		
 		
-
-		
 	}
 
 }
@@ -405,6 +405,7 @@ void getData(struct serverSession *thisSession, struct textStruct *thisText)
 	int bytesRead, result;
 
 	/*Clear out buffers*/
+	bzero(buffer, MAX_PACKET);
 
 	debugTrace("before calling recv", 350);
 	/*# of bytes to expect for text*/
@@ -458,13 +459,29 @@ void receiveHandShake(struct serverSession *thisSession)
 {
 	char buff[MAX_NAME];
 
+	/*Clear buff*/
+	bzero(buff, MAX_NAME);
+
+	char *success = "ENC";
+	int len = strlen(success);
+
 	int bytesRead = recv(thisSession->clientSocket, buff, sizeof(buff), 0);
+
+	/*Print handshake received*/
+	printf(buff);
+	fflush(stdout);
 
 	if (bytesRead < 0){
 		error("Error: unable to read from socket.\n");
 	}
 
-	if(strcmp(buff, "ENC-shake")!=0){
+	if(strncmp(buff, success, len)==0){
+		/*send ACK*/
+		sendAck(thisSession);
+		debugTrace("handshake sucess", 473);
+	}
+	else{
+		debugTrace("sending NACK", 475);
 		sendNACK(thisSession);
 		/*Close socket*/
 		close(thisSession->clientSocket);
@@ -472,10 +489,7 @@ void receiveHandShake(struct serverSession *thisSession)
 		/*Exit child*/
 		_exit(0);
 	}
-	else
-	{
-		/*send ACK*/
-		sendAck(thisSession);
-	}
+
+	
 }
 void encode(char *plain, char *key, char *cipher);
