@@ -37,6 +37,7 @@ struct fileStruct{
 	char *fileName;
 	int charCount;
 	CTYPE validChars;
+	int confirm; /*0: false, 1: true*/
 };
 
 struct session{
@@ -72,12 +73,15 @@ void error(const char *msg);
 void debugTrace(const char *msg, int line);
 
 void startClient(struct session *thisSession);
+void handleRequest(struct session *thisSession);
 
 void sendComms(struct session *thisSession, struct fileStruct *thisFile);
 
 void sendFile(struct session *thisSession);
 void sendKey(struct session *thisSession);
 void receiveCipher(struct session *thisSession);
+
+void confirmReceived(const char *msg, struct fileStruct *thisFile);
 
 int main(int argc, char *argv[])
 {
@@ -93,6 +97,12 @@ int main(int argc, char *argv[])
 
 	/**/
 	validateFiles(curSession);
+
+	/*Start client connection*/
+	startClient(curSession);
+
+	/*take care of request*/
+	handleRequest(curSession);
 
 
 	return 0;
@@ -117,6 +127,7 @@ fileStruct* createFileStruct()
 	fileStruct *thisFileStruct = (fileStruct*)malloc(sizeof(fileStruct));
 	thisFileStruct->fileName=(char*)malloc(sizeof(char)*MAX_NAME);
 	thisFileStruct->charCount=0;
+	thisFileStruct->confirm=0;
 
 	return thisFileStruct;
 }
@@ -348,6 +359,9 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 	/*buffer to store file contents*/
 	char buffer[MAX_PACKET];
 
+	/*Clear the bufffer*/
+	bzero(buffer, MAX_PACKET);
+
 
 	/*Open file*/
 	fileFD=fopen(thisFile->fileName,"r");
@@ -362,11 +376,11 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 	while(fgets(buffer, sizeof(buffer), fileFD)!= NULL){
 
 		/*Send file to client*/
-		result=send(thisSession->dataSocket, buffer, strlen(buffer),0);
+		result=write(thisSession->socketFD, buffer, strlen(buffer));
 
 		/*Ensure send worked*/
 		if(result<0){
-			fprintf(stderr,"Error: unable to send file data to client.");
+			fprintf(stderr,"Error: unable to write data to socket.");
 		}
 
 		/*Wait before sending next data */
@@ -378,6 +392,61 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 	/*Close the file*/
 	fclose(fileFD);
 
+	/*Clear the buffer*/
+	bzero(buffer, MAX_PACKET);
+
+	/*Wait for received message*/
+	result = read(thisSession->socketFD, buffer, strlen(buffer));
+
+	/*Ensure it worked*/
+	if(result < 0){
+		fprintf(stderr, "Error: unable to read data from socket.\n");
+	}
+
+	/*Validate message confirmation*/
+	confirmReceived(buffer, thisFile);
+
+}
+
+
+void handleRequest(struct session *thisSession)
+{
+
+	/*Send plain file first*/
+	while(thisSession->plainFile->confirm == 0){
+		sendComms(thisSession, thisSession->plainFile);
+	}
+	
+	/*Send key file*/
+	while(thisSession->keyFile->confirm == 0){
+		sendComms(thisSession, thisSession->keyFile);
+	}
+
+	/*Get response*/
+
+
+	/*Print response*/
+
+}
+
+
+
+
+
+void confirmReceived(const char *buff, struct fileStruct *thisFile)
+{
+
+	char* received = "ACK";
+	int len = strlen(received);
+
+	/*Compare strings*/
+
+	if(strncmp(buff, received, len)==0){
+		thisFile->confirm = 1;
+	}
+	else{
+		thisFile->confirm =0;
+	}
 }
 
 void sendFile(struct session *thisSession)
