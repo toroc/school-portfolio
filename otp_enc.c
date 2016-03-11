@@ -4,7 +4,7 @@
 #   File Created: 03/09/2016
 #   Last Modified: 03/09/2016
 #   Filename: otp_enc.c
-#	Usage: otp_enc <plainFile> <keyFile> <portNumber>
+#	Usage: otp_enc <plainText> <keyText> <portNumber>
 #   Description:
 #
 #
@@ -32,22 +32,22 @@ typedef enum{INVALID=0, VALID}CTYPE;
 /*Session data structure*/
 typedef struct session session;
 
-typedef struct fileStruct fileStruct;
+typedef struct textStruct textStruct;
 
-struct fileStruct{
+struct textStruct{
 	char *fileName;
-	char fileBuffer[MAX_BUFFER];
+	char textBuffer[MAX_BUFFER];
 	int charCount;
 	CTYPE validChars;
 	int confirm; /*0: false, 1: true*/
 };
 
 struct session{
-	struct fileStruct *plainFile;
-	struct fileStruct *keyFile;
+	struct textStruct *plainText;
+	struct textStruct *keyText;
+	struct textStruct *cipherText;
 	int serverPort; /*int to store server port*/
-	char *cipherTxt;/*string to store cipher text*/
-	int cipherLen; /*length of cipher text*/
+	
 	int dataSocket;
 	int socketFD; /*client socket endpoint file descriptor*/
 	int serverFD; /*Socket file descriptor*/
@@ -56,18 +56,19 @@ struct session{
 };
 
 /*Data Structure Functions*/
-fileStruct* createFileStruct();
-void freeFileStruct(struct fileStruct *thisFile);
+textStruct* createTextStruct();
+void freeTextStruct(struct textStruct *thisText);
 session* createSession();
 void freeSession(struct session *thisSession);
 
 void checkCommandLine(int argcount, char *args[]);
+void sendAck(struct session *thisSession);
 
 
 void validateFiles(struct session *thisSession);
 
 /*File and Key validation helper functions*/
-void fileCharValidation(struct fileStruct *thisFile);
+void fileCharValidation(struct textStruct *thisText);
 int validChar(char curChar);
 
 
@@ -78,14 +79,14 @@ void startClient(struct session *thisSession);
 void handleRequest(struct session *thisSession);
 
 void sendHandShake(struct session *thisSession);
-void sendComms(struct session *thisSession, struct fileStruct *thisFile);
+void sendComms(struct session *thisSession, struct textStruct *thisText);
 
 
 void receiveCipher(struct session *thisSession);
 
 int confirmACK(const char *msg);
 
-void confirmReceived(const char *msg, struct fileStruct *thisFile);
+void confirmReceived(const char *msg, struct textStruct *thisText);
 
 int main(int argc, char *argv[])
 {
@@ -95,8 +96,8 @@ int main(int argc, char *argv[])
 	struct session *curSession = createSession();
 
 	/*save commands*/
-	curSession->plainFile->fileName=argv[1];
-	curSession->keyFile->fileName=argv[2];
+	curSession->plainText->fileName=argv[1];
+	curSession->keyText->fileName=argv[2];
 	curSession->serverPort=atoi(argv[3]);
 
 	/**/
@@ -125,18 +126,18 @@ void error(const char *msg)
     exit(1);
 }
 
-fileStruct* createFileStruct()
+textStruct* createTextStruct()
 {
 	/*Allocate memory for file struct vars*/
-	fileStruct *thisFileStruct = (fileStruct*)malloc(sizeof(fileStruct));
+	textStruct *thisFileStruct = (textStruct*)malloc(sizeof(textStruct));
 	thisFileStruct->fileName=(char*)malloc(sizeof(char)*MAX_NAME);
 	thisFileStruct->charCount=0;
 	thisFileStruct->confirm=0;
 
 	return thisFileStruct;
 }
-void freeFileStruct(struct fileStruct *thisFile){
-	free(thisFile);
+void freeTextStruct(struct textStruct *thisText){
+	free(thisText);
 }
 /******************************************************
 #   Session Data Structure Functions
@@ -152,8 +153,9 @@ session* createSession(){
 
 	/*Allocate memory for the session variables*/
 	session *theSession = (session*)malloc(sizeof(session));
-	theSession->plainFile=createFileStruct();
-	theSession->keyFile=createFileStruct();
+	theSession->plainText=createTextStruct();
+	theSession->keyText=createTextStruct();
+	theSession->cipherText=createTextStruct();
 
 	return theSession;
 }
@@ -181,7 +183,7 @@ void freeSession(struct session *thisSession)
 void checkCommandLine(int argcount, char *args[])
 {
 	if(argcount<=3){
-		printf("Usage: %s <plainFile> <keyFile> <portNumber>\n",args[0]);
+		printf("Usage: %s <plainText> <keyText> <portNumber>\n",args[0]);
 		exit(2);
 	}
 }
@@ -202,7 +204,7 @@ void debugTrace(const char *msg, int line){
 #   @return: n/a
 ******************************************************/
 
-void fileCharValidation(struct fileStruct *thisFile)
+void fileCharValidation(struct textStruct *thisText)
 {
 	printf("char & count validation \n");
 	/*File descriptor for reading file*/
@@ -211,7 +213,7 @@ void fileCharValidation(struct fileStruct *thisFile)
 	int result;
 
 	/*open file for read*/
-	fileFD=fopen(thisFile->fileName,"r");
+	fileFD=fopen(thisText->fileName,"r");
 
 	if(fileFD==0)
 	{
@@ -219,9 +221,9 @@ void fileCharValidation(struct fileStruct *thisFile)
 	}
 
 	/*Save file contents in file buffer*/
-	fgets(thisFile->fileBuffer, sizeof(thisFile->fileBuffer), fileFD);
+	fgets(thisText->textBuffer, sizeof(thisText->textBuffer), fileFD);
 
-	charCount=strlen(thisFile->fileBuffer);
+	charCount=strlen(thisText->textBuffer);
 
 	/*close file descriptor*/
 	fclose(fileFD);
@@ -231,26 +233,26 @@ void fileCharValidation(struct fileStruct *thisFile)
 	char c;
 	for (i=0; i < charCount - 1; i++)
 	{
-		c = thisFile->fileBuffer[i];
+		c = thisText->textBuffer[i];
 
 		/*Found invalid char*/
 		if(validChar(c)==0)
 		{
 			debugTrace("Invalid char", 230);
 			/*Set to INVALID*/
-			thisFile->validChars=INVALID;
+			thisText->validChars=INVALID;
 			/*Exit function*/
 			return;
 		}
 	}
 	
 	/*Set char count and whether valid chars*/
-	thisFile->charCount=charCount-1;
-	thisFile->validChars=VALID;
+	thisText->charCount=charCount-1;
+	thisText->validChars=VALID;
 
 	
 
-	printf("%s: count %d\n", thisFile->fileName, charCount);
+	printf("%s: count %d\n", thisText->fileName, charCount);
 
 
 
@@ -293,23 +295,23 @@ void validateFiles(struct session *thisSession)
 	printf("Validating files \n");
 
 	/*Validate for bad characters*/
-	fileCharValidation(thisSession->plainFile);
-	fileCharValidation(thisSession->keyFile);
+	fileCharValidation(thisSession->plainText);
+	fileCharValidation(thisSession->keyText);
 
 	/*exit with error if files have invalid chars*/
-	if(thisSession->plainFile->validChars == INVALID){
-		fprintf(stderr,"Error: invalid characters in file \'%s\'", thisSession->plainFile->fileName);
+	if(thisSession->plainText->validChars == INVALID){
+		fprintf(stderr,"Error: invalid characters in file \'%s\'", thisSession->plainText->fileName);
 		exit(1);
 	}
 
-	if(thisSession->keyFile->validChars == INVALID){
-		fprintf(stderr, "Error: invalid characters in file \'%s\'", thisSession->keyFile->fileName);
+	if(thisSession->keyText->validChars == INVALID){
+		fprintf(stderr, "Error: invalid characters in file \'%s\'", thisSession->keyText->fileName);
 		exit(1);
 	}
 
-	/*exit with error: if keyfile is shorter than plain file*/
-	if(thisSession->plainFile->charCount > thisSession->keyFile->charCount){
-		fprintf(stderr, "Error: key \'%s\' is too short\n", thisSession->keyFile->fileName);
+	/*exit with error: if keyText is shorter than plain file*/
+	if(thisSession->plainText->charCount > thisSession->keyText->charCount){
+		fprintf(stderr, "Error: key \'%s\' is too short\n", thisSession->keyText->fileName);
 		exit(1);
 	}
 
@@ -379,7 +381,7 @@ void startClient(struct session *thisSession)
 #
 #   @return: n/a
 ******************************************************/
-void sendComms(struct session *thisSession, struct fileStruct *thisFile)
+void sendComms(struct session *thisSession, struct textStruct *thisText)
 {
 	
 	int result;
@@ -391,7 +393,7 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
-	int val = thisFile->charCount;
+	int val = thisText->charCount;
 
 	debugTrace("Before sending expected bytes", 394);
 
@@ -425,9 +427,9 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 	do
 	{
 		/*Send MAX PACKET at a time*/
-		bytesSent+=send(thisSession->socketFD, thisFile->fileBuffer, MAX_PACKET, 0);
+		bytesSent+=send(thisSession->socketFD, thisText->textBuffer, MAX_PACKET, 0);
 
-	}while(bytesSent < thisFile->charCount);
+	}while(bytesSent < thisText->charCount);
 
 	
 	/*Clear the bufffer*/
@@ -439,11 +441,11 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 	if(confirmACK(buffer)==0)
 	{
 		debugTrace("did not receive ACK for file data", 437);
-		thisFile->confirm =0;
+		thisText->confirm =0;
 	}
 	else{
 		debugTrace("received ACK for file data", 440);
-		thisFile->confirm = 1;
+		thisText->confirm = 1;
 	}
 
 	/*Ensure it worked*/
@@ -463,28 +465,31 @@ void handleRequest(struct session *thisSession)
 	/*Take care of handshake*/
 	sendHandShake(thisSession);
 
-	debugTrace("Before plainFile", 458);
+	debugTrace("Before plainText", 458);
 	/*Send plain file first*/
 	do {
-		sendComms(thisSession, thisSession->plainFile);
+		sendComms(thisSession, thisSession->plainText);
 	}
-	while(thisSession->plainFile->confirm == 0);
+	while(thisSession->plainText->confirm == 0);
 
 		
-	debugTrace("Before keyFile", 466);
+	debugTrace("Before keyText", 466);
 	
 	/*Send key file*/
 	do{
-		sendComms(thisSession, thisSession->keyFile);
+		sendComms(thisSession, thisSession->keyText);
 	}
-	while(thisSession->keyFile->confirm == 0);
+	while(thisSession->keyText->confirm == 0);
 		
 	
 
 	/*Get response*/
+	getData(thisSession, thisSession->cipherText);
 
 
 	/*Print response*/
+
+	printf(thisSession->cipherText->textBuffer);
 
 }
 
@@ -528,21 +533,6 @@ void sendHandShake(struct session *thisSession)
 }
 
 
-void confirmReceived(const char *buff, struct fileStruct *thisFile)
-{
-
-	char* received = "ACK";
-	int len = strlen(received);
-
-	/*Compare strings*/
-
-	if(strncmp(buff, received, len)==0){
-		thisFile->confirm = 1;
-	}
-	else{
-		thisFile->confirm =0;
-	}
-}
 
 int confirmACK(const char *buff)
 {
@@ -553,4 +543,80 @@ int confirmACK(const char *buff)
 		return 1;
 	}
 	return 0;
+}
+
+void getData(struct session *thisSession, struct textStruct *thisText)
+{
+	debugTrace("getData ", 560);
+	/*Create buffers*/
+	char buffer[MAX_PACKET];
+	int msgLen;
+
+	int bytesRead, result;
+
+	/*Clear out buffers*/
+	bzero(buffer, MAX_PACKET);
+
+	debugTrace("before calling recv", 350);
+	/*# of bytes to expect for text*/
+	bytesRead = recv(thisSession->socketFD, &msgLen, sizeof(int),0);
+
+	debugTrace("after calling recv", 354);
+
+	/*Ensure it was received*/
+	if(bytesRead <0)
+	{
+		error("Error: unable to read from socket");
+	}
+
+	debugTrace("before calling sendAck for data length", 362);
+	sendAck(thisSession);
+
+	debugTrace("After calling sendAck for data length", 362);
+
+	bytesRead =0;
+
+
+
+	/*Get data*/
+	do{
+		debugTrace("before trying to get file data", 378);
+		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
+
+		debugTrace("print bytes read line 381", bytesRead);
+
+	} while(bytesRead < msgLen);
+
+	/*Print data received*/
+
+	debugTrace("Before trying to print buffer", 402);
+	debugTrace(thisText->textBuffer, 380);
+
+	debugTrace("before calling ACK after data received", 382);
+	
+	/*Send ACK*/
+	sendAck(thisSession);
+
+	/*Set the text length*/
+	thisText->charCount = strlen(thisText->textBuffer);
+
+	/**/
+	debugTrace("Done with getData fn", 413);
+}
+
+void sendAck(struct session *thisSession)
+{
+	debugTrace("inside sendAck", 365);
+	int result;
+	char *msg = "ACK";
+
+
+	/*Send ACK*/
+	result = send(thisSession->socketFD, msg, sizeof(msg) , 0);
+
+	debugTrace("After trying to send ACK", 373);
+
+	if (result <0){
+		error("Error: unable to send to socket\n");
+	}
 }
