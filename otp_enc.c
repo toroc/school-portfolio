@@ -24,6 +24,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#define MAX_BUFFER 128000
 #define MAX_PACKET 1000
 #define MAX_NAME 50
 
@@ -35,6 +36,7 @@ typedef struct fileStruct fileStruct;
 
 struct fileStruct{
 	char *fileName;
+	char fileBuffer[MAX_BUFFER];
 	int charCount;
 	CTYPE validChars;
 	int confirm; /*0: false, 1: true*/
@@ -77,9 +79,9 @@ void handleRequest(struct session *thisSession);
 
 void sendComms(struct session *thisSession, struct fileStruct *thisFile);
 
-void sendFile(struct session *thisSession);
-void sendKey(struct session *thisSession);
 void receiveCipher(struct session *thisSession);
+
+int confirmACK(const char *msg);
 
 void confirmReceived(const char *msg, struct fileStruct *thisFile);
 
@@ -184,7 +186,7 @@ void checkCommandLine(int argcount, char *args[])
 
 
 void debugTrace(const char *msg, int line){
-	printf("%s from line # %d \n", msg, line);
+	printf("OTP_ENC > %s from line # %d \n", msg, line);
 }
 
 /******************************************************
@@ -199,42 +201,50 @@ void debugTrace(const char *msg, int line){
 void fileCharValidation(struct fileStruct *thisFile)
 {
 	printf("char & count validation \n");
-	/*File descriptor*/
-	FILE *fileP;
+	/*File descriptor for reading file*/
+	FILE *fileFD;
 	int charCount=0;
+	int result;
 
-	/*open for read*/
-	fileP=fopen(thisFile->fileName,"r");
+	/*open file for read*/
+	fileFD=fopen(thisFile->fileName,"r");
 
-	if(fileP==0){
+	if(fileFD==0)
+	{
 		printf("File failed to open");
 	}
 
-	char c;
-	while(1){
+	/*Save file contents in file buffer*/
+	fgets(thisFile->fileBuffer, sizeof(thisFile->fileBuffer), fileFD);
 
-		c = fgetc(fileP);
-		if(c == EOF){
-			/*reached end of file*/
-			break;
-		}
-		/*Invalid char*/
-		if(validChar(c)==0){
-			thisFile->validChars=INVALID;
-			printf("Invalid char\n");
-			break;
-		}
-
-		/*increment count*/
-		++charCount;
-	}
-
-	/*Set char count and whether valid chars*/
-	thisFile->charCount=charCount;
-	thisFile->validChars=VALID;
+	charCount=strlen(thisFile->fileBuffer);
 
 	/*close file descriptor*/
-	fclose(fileP);
+	fclose(fileFD);
+
+	/*Loop through char buffer & validate chars*/
+	int i;
+	char c;
+	for (i=0; i < charCount - 1; i++)
+	{
+		c = thisFile->fileBuffer[i];
+
+		/*Found invalid char*/
+		if(validChar(c)==0)
+		{
+			debugTrace("Invalid char", 230);
+			/*Set to INVALID*/
+			thisFile->validChars=INVALID;
+			/*Exit function*/
+			return;
+		}
+	}
+	
+	/*Set char count and whether valid chars*/
+	thisFile->charCount=charCount-1;
+	thisFile->validChars=VALID;
+
+	
 
 	printf("%s: count %d\n", thisFile->fileName, charCount);
 
@@ -367,58 +377,77 @@ void startClient(struct session *thisSession)
 ******************************************************/
 void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 {
-	/*File descriptor for reading file*/
-	FILE *fileFD;
+	
 	int result;
+	int bytesSent;
 
-	/*buffer to store file contents*/
+	/*buffer to store response contents*/
 	char buffer[MAX_PACKET];
 
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
+	int val = thisFile->charCount;
 
-	/*Open file*/
-	fileFD=fopen(thisFile->fileName,"r");
+	debugTrace("Before sending expected bytes", 394);
 
-	if(fileFD==NULL){
-		fprintf(stderr,"Error: unable to open file.\n");
+	/*Send number of bytes to expect*/
+	bytesSent = send(thisSession->socketFD, &val, sizeof(int),0);
+
+	/*Ensure message sent*/
+	if(bytesSent <0){
+		error("No bytes sent");
 	}
 
+	debugTrace("Before waiting for ACK", 404);
 
+	/*Wait for ACK*/
+	result = recv(thisSession->socketFD, buffer, strlen(buffer),0);
 
-	/*Continously load file items to buffer*/
-	while(fgets(buffer, sizeof(buffer), fileFD)!= NULL){
+	debugTrace("After calling rcv", 409);
 
-		/*Send file to client*/
-		result=send(thisSession->socketFD, buffer, strlen(buffer), 0);
-
-		/*Ensure send worked*/
-		if(result<0){
-			error("Error: unable to send data to socket.");
-		}
-
-		/*Wait before sending next data */
-		usleep(10);
+	/*Confirm ACK*/
+	if(confirmACK(buffer)==0)
+	{
+		debugTrace("Did not receive ACK for bytes to expect", 403);
 	}
 
+	/*Set bytesSent to 0*/
+	bytesSent =0;
 
-	/*Close the file*/
-	fclose(fileFD);
 
-	/*Clear the buffer*/
+	debugTrace("before sending file contents", 421);
+	/*Send MAX PACKET at a time*/
+	do
+	{
+		/*Send MAX PACKET at a time*/
+		bytesSent+=send(thisSession->socketFD, thisFile->fileBuffer, MAX_PACKET, 0);
+
+	}while(bytesSent < thisFile->charCount);
+
+	
+	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
 	/*Wait for received message*/
 	result = recv(thisSession->socketFD, buffer, strlen(buffer), 0);
+
+	if(confirmACK(buffer)==0)
+	{
+		debugTrace("did not receive ACK for file data", 437);
+		thisFile->confirm =0;
+	}
+	else{
+		debugTrace("received ACK for file data", 440);
+		thisFile->confirm = 1;
+	}
 
 	/*Ensure it worked*/
 	if(result < 0){
 		error("Error: unable to read data from socket.\n");
 	}
 
-	/*Validate message confirmation*/
-	confirmReceived(buffer, thisFile);
+	
 
 }
 
@@ -426,15 +455,23 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 void handleRequest(struct session *thisSession)
 {
 
+	debugTrace("Before plainFile", 458);
 	/*Send plain file first*/
-	while(thisSession->plainFile->confirm == 0){
+	do {
 		sendComms(thisSession, thisSession->plainFile);
 	}
+	while(thisSession->plainFile->confirm == 0);
+
+		
+	debugTrace("Before keyFile", 466);
 	
 	/*Send key file*/
-	while(thisSession->keyFile->confirm == 0){
+	do{
 		sendComms(thisSession, thisSession->keyFile);
 	}
+	while(thisSession->keyFile->confirm == 0);
+		
+	
 
 	/*Get response*/
 
@@ -463,3 +500,13 @@ void confirmReceived(const char *buff, struct fileStruct *thisFile)
 	}
 }
 
+int confirmACK(const char *buff)
+{
+	char *success = "ACK";
+	int len = strlen(success);
+
+	if(strncmp(buff, success, len)==0){
+		return 1;
+	}
+	return 0;
+}
