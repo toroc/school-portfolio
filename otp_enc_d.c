@@ -80,8 +80,7 @@ void sendAck(struct serverSession *thisSession);
 void checkCommandLine(int argcount, char *args[]);
 
 void error(const char *msg);
-void receiveFile(struct serverSession *thisSession);
-void receiveKey(struct serverSession *thisSession);
+
 void sendCipher(struct serverSession *thisSession);
 
 
@@ -124,7 +123,7 @@ int main(int argc, char *argv[])
 }
 
 void debugTrace(const char *msg, int line){
-	printf("%s from line # %d \n", msg, line);
+	printf("OTP_ENC_D > %s from line # %d \n", msg, line);
 }
 
 void error(const char *msg)
@@ -179,7 +178,7 @@ void freeTextStruct(struct textStruct *thisText)
 
 childSession *createChildSession()
 {
-	childSession * thisChildSession = (childSession *)malloc(sizeof(childSession));
+	childSession * thisChild = (childSession *)malloc(sizeof(childSession));
 	thisChild->plainTxt = createTextStruct();
 	thisChild->keyTxt = createTextStruct();
 	thisChild->cipherTxt = createTextStruct();
@@ -296,11 +295,11 @@ void handleConnection(struct serverSession *thisSession)
 	/*Inside child*/
 	if(childPID ==0){
 
-		debugTrace("inside child " 244);
+		debugTrace("inside child ",244);
 
 		struct childSession *thisChild = createChildSession();
 
-		handleChildProcess(thisSession);
+		handleChildProcess(thisSession, thisChild);
 		
 		
 
@@ -313,9 +312,10 @@ void handleChildProcess(struct serverSession *thisSession, struct childSession *
 {
 	
 	/*Get plain data*/
+	debugTrace("before sending for plain data", 315);
 	getData(thisSession, thisChild->plainTxt);
 
-
+	debugTrace("before sending for key data", 318);
 	/*Get key data*/
 	getData(thisSession, thisChild->keyTxt);
 
@@ -326,10 +326,15 @@ void handleChildProcess(struct serverSession *thisSession, struct childSession *
 }
 void sendAck(struct serverSession *thisSession)
 {
+	debugTrace("inside sendAck", 328);
 	int result;
+	char msg = "ACK";
+
 
 	/*Send ACK*/
-	result = send(thisSession->clientSocket, "ACK", 3, 0);
+	result = send(thisSession->clientSocket, msg,sizeof(msg) , 0);
+
+	debugTrace("After trying to send ACK", 336);
 
 	if (result != 3){
 		error("Error: unable to send to socket");
@@ -338,6 +343,7 @@ void sendAck(struct serverSession *thisSession)
 
 void getData(struct serverSession *thisSession, struct textStruct *thisText)
 {
+	debugTrace("getData ", 341);
 	/*Create buffers*/
 	char buffer[MAX_PACKET];
 	int msgLen;
@@ -346,27 +352,32 @@ void getData(struct serverSession *thisSession, struct textStruct *thisText)
 
 	/*Clear out buffers*/
 
+	debugTrace("before calling recv", 350);
 	/*# of bytes to expect for text*/
-	bytesRead = recv(thisSession->clientSocket, buffer, 1,0);
+	bytesRead = recv(thisSession->clientSocket, &msgLen, sizeof(int),0);
+
+	debugTrace("after calling recv", 354);
 
 	/*Ensure it was received*/
-	if(bytesRead != 1)
+	if(bytesRead <0)
 	{
 		error("Error: unable to read from socket");
 	}
 
-	/*Save length of message*/
-	msgLen = atoi(buffer);
-
+	debugTrace("before calling sendAck", 362);
 	sendAck(thisSession);
 
 	bytesRead =0;
 
 	/*Get data*/
 	do{
-		bytesRead+=recv(thisSession->clientSocket, thisText->textBuffer, MAX_BUFFER,0)
+		bytesRead+=recv(thisSession->clientSocket, thisText->textBuffer, MAX_BUFFER,0);
+
 	} while(bytesRead < msgLen);
-	
+
+	/*Print data received*/
+
+	debugTrace(thisText->textBuffer, 380);
 	/*Send ACK*/
 	sendAck(thisSession);
 
