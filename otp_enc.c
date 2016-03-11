@@ -77,7 +77,9 @@ void debugTrace(const char *msg, int line);
 void startClient(struct session *thisSession);
 void handleRequest(struct session *thisSession);
 
+void sendHandShake(struct session *thisSession);
 void sendComms(struct session *thisSession, struct fileStruct *thisFile);
+
 
 void receiveCipher(struct session *thisSession);
 
@@ -402,7 +404,7 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 	debugTrace("Before waiting for ACK", 404);
 
 	/*Wait for ACK*/
-	result = recv(thisSession->socketFD, buffer, strlen(buffer),0);
+	result = recv(thisSession->socketFD, buffer, sizeof(buffer),0);
 
 	debugTrace("After calling rcv", 409);
 
@@ -430,7 +432,7 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 	bzero(buffer, MAX_PACKET);
 
 	/*Wait for received message*/
-	result = recv(thisSession->socketFD, buffer, strlen(buffer), 0);
+	result = recv(thisSession->socketFD, buffer, sizeof(buffer), 0);
 
 	if(confirmACK(buffer)==0)
 	{
@@ -454,6 +456,10 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 
 void handleRequest(struct session *thisSession)
 {
+
+
+	/*Take care of handshake*/
+	sendHandShake(thisSession);
 
 	debugTrace("Before plainFile", 458);
 	/*Send plain file first*/
@@ -481,7 +487,40 @@ void handleRequest(struct session *thisSession)
 }
 
 
+void sendHandShake(struct session *thisSession)
+{
+	char buff[MAX_NAME];
+	char *msg = "ENC-shake";
 
+	debugTrace("before sending handshake", 494);
+	/*Send Handshake*/
+
+	int result = send(thisSession->socketFD, msg, sizeof(msg),0);
+
+	if (result <0)
+	{
+		error("Error: unable to send handshake.\n");
+	}
+
+	debugTrace("after sending handshake", 503);
+
+
+	/*Confirm response*/
+
+	int result = recv(thisSession->socketFD, buff, sizeof(buff), 0);
+
+	if (result < 0)
+	{
+		error("Error: unable to read from socket.\n");
+	}
+
+	debugTrace("After receiving handshake confirmation", 517);
+
+	if(confirmACK(buff)==0){
+		printf("Could not contact otp_dec_d on port %d.\n", thisSession->serverPort);
+		exit(2);
+	}
+}
 
 
 void confirmReceived(const char *buff, struct fileStruct *thisFile)
