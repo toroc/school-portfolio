@@ -28,6 +28,7 @@
 
 #define MAX_PACKET 1000
 #define MAX_NAME 50
+
 /*Session data structure*/
 typedef struct serverSession serverSession;
 typedef struct childSession childSession;
@@ -52,6 +53,7 @@ struct serverSession{
 	int clientSocket; /*client socket for connection*/
 	struct sockaddr_in serverAddr;
 	struct sockaddr_in clientAddr;
+	char *clientName;
 
 };
 
@@ -67,15 +69,18 @@ void freeTextStruct(struct textStruct *thisText);
 childSession *createChildSession();
 void freeChildSession(struct childSession *thisChild);
 
+void receiveHandShake(struct serverSession *thisSession);
+
 
 void startServer(struct serverSession *thisSession);
 void acceptConnection(struct serverSession *thisSession);
-void handleConnection(struct serverSession *thisSession);
+void handleConnections(struct serverSession *thisSession);
 void handleChildProcess(struct serverSession *thisSession, struct childSession *thisChild);
 
 void getData(struct serverSession *thisSession, struct textStruct *thisText);
 
 void sendAck(struct serverSession *thisSession);
+void sendNACK(struct serverSession *thisSession);
 
 void checkCommandLine(int argcount, char *args[]);
 
@@ -102,12 +107,8 @@ int main(int argc, char *argv[])
 	/**/
 	while(1)
 	{
-
-		/*Start connection*/
-		acceptConnection(curSession);
-
-		/*Handle request*/
-		handleConnection(curSession);
+		/*Handle connections*/
+		handleConnections(curSession);
 	}
 
 	/**/
@@ -145,6 +146,7 @@ serverSession* createSession(){
 
 	/*Allocate memory for the serverSession variables*/
 	serverSession *theSession = (serverSession*)malloc(sizeof(serverSession));
+	theSession->clientName=(char*)malloc(sizeof(char)*MAX_NAME);
 
 	return theSession;
 }
@@ -232,9 +234,9 @@ void startServer(struct serverSession *thisSession)
 	}
 
 	/*setup server socket*/
-	thisSession->serverAddr.sin_family = AF_INET;
-	thisSession->serverAddr.sin_port = htons(thisSession->serverPort);
-	thisSession->serverAddr.sin_addr.s_addr= INADDR_ANY;
+	thisSession->serverAddr.sin_family = AF_INET;	/*Protocol Family*/
+	thisSession->serverAddr.sin_port = htons(thisSession->serverPort); /*port # to use*/
+	thisSession->serverAddr.sin_addr.s_addr= INADDR_ANY; /*Local address*/
 
 
 	/*Allow reuse of address*/
@@ -256,38 +258,67 @@ void startServer(struct serverSession *thisSession)
 
 	debugTrace("before listen ", 205);
 	/*Listen for incoming connections*/
-	listen(thisSession->serverSocket, 5);
+	result = listen(thisSession->serverSocket, 5);
+
+	if(result < 0){
+		error("Error: unable to listen for connections.\n");
+	}
 }
 
 void acceptConnection(struct serverSession *thisSession)
 {
 	debugTrace("before accept connection ", 212);
 
-	socklen_t clientLength = sizeof(thisSession->clientAddr);
+	/*Vars to store client's info at connection and accept*/
+	struct sockaddr_in clientAddr;
+	socklen_t clientLength = sizeof(clientAddr);
+	char clientName[1024];
+	char service[20];
+
 
 	/*Accept incoming connection*/
-	thisSession->clientSocket = accept(thisSession->serverSocket, (struct sockaddr*) &thisSession->clientAddr, &clientLength);
+	thisSession->clientSocket = accept(thisSession->serverSocket, (struct sockaddr*) &clientAddr,&clientLength);
 
 	/*Ensure it worked*/
 	if(thisSession->clientSocket < 0){
 		error("Error: unable to accept connection.\n");
 	}
+	else{
+		/*Get name of client*/
+		getnameinfo((struct sockaddr *)&clientAddr, sizeof(clientAddr),clientName,sizeof(clientName), service, sizeof(service),0);
+	}
 
 	debugTrace("After accept connection", 224);
 
+	/*Store client address in session data structure*/
+	thisSession->clientAddr = clientAddr;
 
 }
 
-void handleConnection(struct serverSession *thisSession)
+void handleConnections(struct serverSession *thisSession)
 {
+	
+	socklen_t clientLength = sizeof(thisSession->clientAddr);
+
+	/*Wait for connection*/
+	thisSession->clientSocket = accept(thisSession->serverSocket, (struct sockaddr*) &thisSession->clientAddr, &clientLength);
+
+	/*Ensure it worked*/
+	if (thisSession->clientSocket<0)
+	{
+		error("Error: unable to accept connection.\n");
+	}
+
+
 	pid_t childPID;
 
-	debugTrace("before fork,", 232);
+	debugTrace("before fork,", 312);
 	/*Fork*/
 	childPID  = fork();
 
 	/*Check for error*/
 	if(childPID < 0){
+
 		error("Error: unable to fork new process.\n");
 
 	}
@@ -295,7 +326,7 @@ void handleConnection(struct serverSession *thisSession)
 	/*Inside child*/
 	if(childPID ==0){
 
-		debugTrace("inside child ",244);
+		debugTrace("inside child ", 325);
 
 		struct childSession *thisChild = createChildSession();
 
@@ -310,12 +341,17 @@ void handleConnection(struct serverSession *thisSession)
 
 void handleChildProcess(struct serverSession *thisSession, struct childSession *thisChild)
 {
-	
+	debugTrace("handleChildProcess", 344);
+
+	/*Confirm Handshake*/
+	receiveHandShake(thisSession);
+
 	/*Get plain data*/
-	debugTrace("before sending for plain data", 315);
+	debugTrace("before sending for plain data", 350);
 	getData(thisSession, thisChild->plainTxt);
 
-	debugTrace("before sending for key data", 318);
+	debugTrace("before sending for key data", 353);
+	
 	/*Get key data*/
 	getData(thisSession, thisChild->keyTxt);
 
@@ -326,20 +362,38 @@ void handleChildProcess(struct serverSession *thisSession, struct childSession *
 }
 void sendAck(struct serverSession *thisSession)
 {
-	debugTrace("inside sendAck", 328);
+	debugTrace("inside sendAck", 365);
 	int result;
-	char msg = "ACK";
+	char *msg = "ACK";
 
 
 	/*Send ACK*/
-	result = send(thisSession->clientSocket, msg,sizeof(msg) , 0);
+	result = send(thisSession->clientSocket, msg, sizeof(msg) , 0);
 
-	debugTrace("After trying to send ACK", 336);
+	debugTrace("After trying to send ACK", 373);
 
-	if (result != 3){
-		error("Error: unable to send to socket");
+	if (result <0){
+		error("Error: unable to send to socket\n");
 	}
 }
+
+void sendNACK(struct serverSession *thisSession)
+{
+	debugTrace("inside sendAck", 382);
+	int result;
+	char *msg = "NACK";
+
+
+	/*Send ACK*/
+	result = send(thisSession->clientSocket, msg, sizeof(msg) , 0);
+
+	debugTrace("After trying to send NACK", 336);
+
+	if (result <0){
+		error("Error: unable to send to socket\n");
+	}
+}
+
 
 void getData(struct serverSession *thisSession, struct textStruct *thisText)
 {
@@ -364,25 +418,64 @@ void getData(struct serverSession *thisSession, struct textStruct *thisText)
 		error("Error: unable to read from socket");
 	}
 
-	debugTrace("before calling sendAck", 362);
+	debugTrace("before calling sendAck for data length", 362);
 	sendAck(thisSession);
+
+	debugTrace("After calling sendAck for data length", 362);
 
 	bytesRead =0;
 
+
+
 	/*Get data*/
 	do{
+		debugTrace("before trying to get file data", 378);
 		bytesRead+=recv(thisSession->clientSocket, thisText->textBuffer, MAX_BUFFER,0);
+
+		debugTrace("print bytes read line 381", bytesRead);
 
 	} while(bytesRead < msgLen);
 
 	/*Print data received*/
 
+	debugTrace("Before trying to print buffer", 402);
 	debugTrace(thisText->textBuffer, 380);
+
+	debugTrace("before calling ACK after data received", 382);
+	
 	/*Send ACK*/
 	sendAck(thisSession);
 
-	thisText->charCount = bytesRead;
+	/*Set the text length*/
+	thisText->charCount = strlen(thisText->textBuffer);
+
+	/**/
+	debugTrace("Done with getData fn", 413);
 }
 
 
+void receiveHandShake(struct serverSession *thisSession)
+{
+	char buff[MAX_NAME];
+
+	int bytesRead = recv(thisSession->clientSocket, buff, sizeof(buff), 0);
+
+	if (bytesRead < 0){
+		error("Error: unable to read from socket.\n");
+	}
+
+	if(strcmp(buff, "ENC-shake")!=0){
+		sendNACK(thisSession);
+		/*Close socket*/
+		close(thisSession->clientSocket);
+
+		/*Exit child*/
+		_exit(0);
+	}
+	else
+	{
+		/*send ACK*/
+		sendAck(thisSession);
+	}
+}
 void encode(char *plain, char *key, char *cipher);
