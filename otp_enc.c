@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 void error(const char *msg)
 {
     perror(msg);
-    exit(0);
+    exit(1);
 }
 
 fileStruct* createFileStruct()
@@ -308,13 +308,24 @@ void startClient(struct session *thisSession)
 {
 
 	debugTrace("startClient ", 299);
+	int optVal =1;
+
 	/*Create client socket endpoint*/
-	thisSession->socketFD=(AF_INET,SOCK_STREAM, 0);
+	thisSession->socketFD=socket(AF_INET,SOCK_STREAM, 0);
 
 	/*Ensure it worked*/
 	if(thisSession->socketFD == -1){
-		fprintf(stderr, "Error: unable to open client socket endpoint.\n");
+		error("Error: unable to open client socket endpoint.\n");
 		exit(1);
+	}
+
+
+	/*Allow reuse of address*/
+	int result = setsockopt(thisSession->socketFD, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal));
+
+	/*Ensure it worked*/
+	if (result < 0){
+		error("Error: unable to setup SO_REUSEADDR.\n");
 	}
 
 	/*setup server socket*/
@@ -322,21 +333,25 @@ void startClient(struct session *thisSession)
 
 	/*Ensure it worked*/
 	if(thisSession->serverIP == NULL){
-		fprintf(stderr, "Error: unable to resolve server host name.\n");
+		error("Error: unable to resolve server host name.\n");
 	}
 
-	/*Set up addresss*/
+	/*Set up client socket */
 	thisSession->serverAddr.sin_family = AF_INET;
 	thisSession->serverAddr.sin_port=htons(thisSession->serverPort);
+	thisSession->serverAddr.sin_addr.s_addr = INADDR_ANY;
+
+
+
 
 	debugTrace("before connect", 321);
 
 	/*Connect to server*/
-	int result = connect(thisSession->socketFD, (struct sockaddr *) &thisSession->serverAddr, sizeof(thisSession->serverAddr));
+	result = connect(thisSession->socketFD, (struct sockaddr *) &thisSession->serverAddr, sizeof(thisSession->serverAddr));
 
 	/*Ensure it worked*/
 	if (result < 0){
-		fprintf(stderr, "Error: unable to connect to server.\n");
+		error("Error: unable to connect to server.\n");
 	}
 
 	debugTrace("after connect", 331);
@@ -376,18 +391,17 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 	while(fgets(buffer, sizeof(buffer), fileFD)!= NULL){
 
 		/*Send file to client*/
-		result=write(thisSession->socketFD, buffer, strlen(buffer));
+		result=send(thisSession->socketFD, buffer, strlen(buffer), 0);
 
 		/*Ensure send worked*/
 		if(result<0){
-			fprintf(stderr,"Error: unable to write data to socket.");
+			error("Error: unable to send data to socket.");
 		}
 
 		/*Wait before sending next data */
 		usleep(10);
 	}
 
-	printf("done sending plain text file");
 
 	/*Close the file*/
 	fclose(fileFD);
@@ -396,11 +410,11 @@ void sendComms(struct session *thisSession, struct fileStruct *thisFile)
 	bzero(buffer, MAX_PACKET);
 
 	/*Wait for received message*/
-	result = read(thisSession->socketFD, buffer, strlen(buffer));
+	result = recv(thisSession->socketFD, buffer, strlen(buffer), 0);
 
 	/*Ensure it worked*/
 	if(result < 0){
-		fprintf(stderr, "Error: unable to read data from socket.\n");
+		error("Error: unable to read data from socket.\n");
 	}
 
 	/*Validate message confirmation*/
@@ -449,90 +463,3 @@ void confirmReceived(const char *buff, struct fileStruct *thisFile)
 	}
 }
 
-void sendFile(struct session *thisSession)
-{
-	/*File descriptor for reading file*/
-	FILE *fileFD;
-	int result;
-
-	/*buffer to store file contents*/
-	char buffer[MAX_PACKET];
-
-
-	/*Open file*/
-	fileFD=fopen(thisSession->plainFile->fileName,"r");
-
-	if(fileFD==NULL){
-		fprintf(stderr,"Error: unable to open file.\n");
-	}
-
-
-
-	/*Continously load file items to buffer*/
-	while(fgets(buffer, sizeof(buffer), fileFD)!= NULL){
-
-		/*Send file to client*/
-		result=send(thisSession->dataSocket, buffer, strlen(buffer),0);
-
-		/*Ensure send worked*/
-		if(result<0){
-			fprintf(stderr,"Error: unable to send file data to client.");
-		}
-
-		/*Wait before sending next data */
-		usleep(10);
-	}
-
-	printf("done sending plain text file");
-
-	/*Close the file*/
-	fclose(fileFD);
-}
-
-/******************************************************
-#   	funcName
-#   @desc:
-#
-#   @param:
-#
-#   @return: n/a
-******************************************************/
-void sendKey(struct session *thisSession)
-{
-	/*File descriptor for reading file*/
-	FILE *fileFD;
-	int result;
-
-	/*buffer to store file contents*/
-	char buffer[MAX_PACKET];
-
-
-	/*Open key file*/
-	fileFD=fopen(thisSession->keyFile->fileName,"r");
-
-	if(fileFD==NULL){
-		fprintf(stderr,"Error: unable to open file.\n");
-	}
-
-
-
-	/*Continously load file items to buffer*/
-	while(fgets(buffer, sizeof(buffer), fileFD)!= NULL){
-
-		/*Send file to client*/
-		result=send(thisSession->dataSocket, buffer, strlen(buffer),0);
-
-		/*Ensure send worked*/
-		if(result<0){
-			fprintf(stderr,"Error: unable to send file data to client.");
-		}
-
-		/*Wait before sending next data */
-		usleep(10);
-	}
-
-	printf("done sending key text file");
-
-	/*Close the file*/
-	fclose(fileFD);
-}
