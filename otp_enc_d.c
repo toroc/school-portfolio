@@ -24,11 +24,27 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#define MAX_BUFFER 128000
 
 #define MAX_PACKET 1000
 #define MAX_NAME 50
 /*Session data structure*/
 typedef struct serverSession serverSession;
+typedef struct childSession childSession;
+
+typedef struct textStruct textStruct;
+
+
+struct textStruct{
+	char *textBuffer;
+	int charCount;
+};
+
+struct childSession{
+	struct textStruct *plainTxt;
+	struct textStruct *keyTxt;
+	struct textStruct *cipherTxt;
+};
 
 struct serverSession{
 	int serverSocket; /*Server socket for listening*/
@@ -37,25 +53,29 @@ struct serverSession{
 	struct sockaddr_in serverAddr;
 	struct sockaddr_in clientAddr;
 
-	char *plainFile; /*string to store file name*/
-	int plainLen;/*length of plain file text*/
-	char *keyFile; /*string to store key file name*/
-	int keyLen; /*length of keymfile text*/
-
-	char *cipherTxt;/*string to store cipher text*/
-	int cipherLen; /*length of cipher text*/
-
 };
 
 void debugTrace(const char *msg, int line);
+
 /*Data Structure Functions*/
 serverSession* createSession();
 void freeSession(struct serverSession *thisSession);
+
+textStruct* createTextStruct();
+void freeTextStruct(struct textStruct *thisText);
+
+childSession *createChildSession();
+void freeChildSession(struct childSession *thisChild);
 
 
 void startServer(struct serverSession *thisSession);
 void acceptConnection(struct serverSession *thisSession);
 void handleConnection(struct serverSession *thisSession);
+void handleChildProcess(struct serverSession *thisSession, struct childSession *thisChild);
+
+void getData(struct serverSession *thisSession, struct textStruct *thisText);
+
+void sendAck(struct serverSession *thisSession);
 
 void checkCommandLine(int argcount, char *args[]);
 
@@ -104,7 +124,7 @@ int main(int argc, char *argv[])
 }
 
 void debugTrace(const char *msg, int line){
-	printf("%s from line # %d", msg, line);
+	printf("%s from line # %d \n", msg, line);
 }
 
 void error(const char *msg)
@@ -126,10 +146,6 @@ serverSession* createSession(){
 
 	/*Allocate memory for the serverSession variables*/
 	serverSession *theSession = (serverSession*)malloc(sizeof(serverSession));
-	theSession->plainFile=(char*)malloc(sizeof(char)*MAX_NAME);
-	theSession->plainLen=0;
-	theSession->keyFile=(char*)malloc(sizeof(char)*MAX_NAME);
-	theSession->keyLen=0;
 
 	return theSession;
 }
@@ -145,6 +161,44 @@ void freeSession(struct serverSession *thisSession)
 	free(thisSession);
 
 }
+
+
+textStruct* createTextStruct()
+{
+	/*Allocate memory for textStruct vars*/
+	textStruct *thisText = (textStruct*)malloc(sizeof(textStruct));
+	thisText->textBuffer = (char *)malloc(sizeof(char)*MAX_BUFFER);
+
+	return thisText;
+
+}
+void freeTextStruct(struct textStruct *thisText)
+{
+	free(thisText);
+}
+
+childSession *createChildSession()
+{
+	childSession * thisChildSession = (childSession *)malloc(sizeof(childSession));
+	thisChild->plainTxt = createTextStruct();
+	thisChild->keyTxt = createTextStruct();
+	thisChild->cipherTxt = createTextStruct();
+
+	return thisChild;
+
+}
+void freeChildSession(struct childSession *thisChild)
+{
+	freeTextStruct(thisChild->plainTxt);
+	freeTextStruct(thisChild->keyTxt);
+	freeTextStruct(thisChild->cipherTxt);
+
+	free(thisChild);
+}
+
+
+
+
 
 /******************************************************
 #   checkCommandLine
@@ -167,7 +221,7 @@ void checkCommandLine(int argcount, char *args[])
 void startServer(struct serverSession *thisSession)
 {
 
-	debugTrace("begin startServer\n", 171);
+	debugTrace("begin startServer", 171);
 
 	int optVal =1;
 	/*Create server socket*/
@@ -201,14 +255,14 @@ void startServer(struct serverSession *thisSession)
 		error("Error: unable to bind to host address.\n");
 	}
 
-	debugTrace("before listen\n", 205);
+	debugTrace("before listen ", 205);
 	/*Listen for incoming connections*/
 	listen(thisSession->serverSocket, 5);
 }
 
 void acceptConnection(struct serverSession *thisSession)
 {
-	debugTrace("before accept connection \n", 212);
+	debugTrace("before accept connection ", 212);
 
 	socklen_t clientLength = sizeof(thisSession->clientAddr);
 
@@ -220,7 +274,7 @@ void acceptConnection(struct serverSession *thisSession)
 		error("Error: unable to accept connection.\n");
 	}
 
-	debugTrace("After accept connection \n", 224);
+	debugTrace("After accept connection", 224);
 
 
 }
@@ -229,6 +283,7 @@ void handleConnection(struct serverSession *thisSession)
 {
 	pid_t childPID;
 
+	debugTrace("before fork,", 232);
 	/*Fork*/
 	childPID  = fork();
 
@@ -241,17 +296,82 @@ void handleConnection(struct serverSession *thisSession)
 	/*Inside child*/
 	if(childPID ==0){
 
-		/*read message*/
+		debugTrace("inside child " 244);
 
+		struct childSession *thisChild = createChildSession();
 
-		/*read key*/
+		handleChildProcess(thisSession);
+		
+		
 
-
-		/*encode message*/
+		
 	}
 
 }
 
+void handleChildProcess(struct serverSession *thisSession, struct childSession *thisChild)
+{
+	
+	/*Get plain data*/
+	getData(thisSession, thisChild->plainTxt);
+
+
+	/*Get key data*/
+	getData(thisSession, thisChild->keyTxt);
+
+
+
+
+	/*encode message*/
+}
+void sendAck(struct serverSession *thisSession)
+{
+	int result;
+
+	/*Send ACK*/
+	result = send(thisSession->clientSocket, "ACK", 3, 0);
+
+	if (result != 3){
+		error("Error: unable to send to socket");
+	}
+}
+
+void getData(struct serverSession *thisSession, struct textStruct *thisText)
+{
+	/*Create buffers*/
+	char buffer[MAX_PACKET];
+	int msgLen;
+
+	int bytesRead, result;
+
+	/*Clear out buffers*/
+
+	/*# of bytes to expect for text*/
+	bytesRead = recv(thisSession->clientSocket, buffer, 1,0);
+
+	/*Ensure it was received*/
+	if(bytesRead != 1)
+	{
+		error("Error: unable to read from socket");
+	}
+
+	/*Save length of message*/
+	msgLen = atoi(buffer);
+
+	sendAck(thisSession);
+
+	bytesRead =0;
+
+	/*Get data*/
+	do{
+		bytesRead+=recv(thisSession->clientSocket, thisText->textBuffer, MAX_BUFFER,0)
+	} while(bytesRead < msgLen);
+	
+	/*Send ACK*/
+	sendAck(thisSession);
+
+	thisText->charCount = bytesRead;
+}
 
 
 void encode(char *plain, char *key, char *cipher);
