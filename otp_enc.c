@@ -189,6 +189,8 @@ void checkCommandLine(int argcount, char *args[])
 
 void debugTrace(const char *msg, int line){
 	printf("OTP_ENC > %s from line # %d \n", msg, line);
+
+	fflush(stdout);
 }
 
 /******************************************************
@@ -490,7 +492,11 @@ void handleRequest(struct session *thisSession)
 void sendHandShake(struct session *thisSession)
 {
 	char buff[MAX_NAME];
-	char *msg = "ENC-shake";
+
+	/*clear buffer*/
+	bzero(buff, MAX_NAME);
+
+	char *msg ="ENC";
 
 	debugTrace("before sending handshake", 494);
 	/*Send Handshake*/
@@ -506,8 +512,7 @@ void sendHandShake(struct session *thisSession)
 
 
 	/*Confirm response*/
-
-	int result = recv(thisSession->socketFD, buff, sizeof(buff), 0);
+	result = recv(thisSession->socketFD, buff, sizeof(buff), 0);
 
 	if (result < 0)
 	{
