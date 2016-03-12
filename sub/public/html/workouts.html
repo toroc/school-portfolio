@@ -1,0 +1,51 @@
+
+<!-- Client Side static page -->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>List of Workouts</title>
+  <!-- css style sheet -->
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+  <!--boot strap sheet-->
+  <link rel="stylesheet" href="css/lavish-bootstrap.css">
+  
+  <script src="js/databaseCalls.js"></script>
+</head>
+<body>
+  <form>
+    <fieldset>
+      <legend>Add a Workout</legend>
+      <label for="name" id="exercise">Exercise Name:</label>
+      <input type="text" name="name" id="name">
+      
+      <label for="reps">Repetitions:</label>
+      <input type="number" name="reps" id="reps"> 
+
+      <label for="weight">Weight:</label>
+      <input type="number" name="weight" id="weight"> 
+
+      <label for="date">Date:</label>
+      <input type="date" name="date" id="date">
+
+      <input type="radio" name="unit" id="lbs" value="lbs" checked="checked"/>Pounds
+      <input type="radio" name="unit" id="lbs" value="kilo" />Kilograms
+
+      <input type="submit" id="newWorkout">
+    </fieldset>
+  </form>
+  <table id="workouts">
+    <caption>Your Workouts</caption>
+    <tr>
+      <th class="idTitle">Id</th>
+      <th>Exercise</th>
+      <th>Repetitions</th>
+      <th>Weight</th>
+      <th>Date</th>
+      <th>Unit</th>
+    </tr>
+  </table>   
+
+</body>
+</html>
