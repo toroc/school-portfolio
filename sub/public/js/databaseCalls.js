@@ -259,8 +259,8 @@ function createRow(data){
 	/*Create Delete Form*/
 	var editForm = document.createElement("form");
 	/*Set form attributes*/
-	editForm.action="../../";
-	editForm.method = "post";
+	editForm.action="/";
+	editForm.method = "POST";
 
 	/*Create children*/
 	var editFormId = document.createElement("input");
