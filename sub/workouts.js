@@ -52,6 +52,8 @@ var pool = mysql.createPool({
 /*Route for adding working*/
 app.get('/addWorkout', function(req, res, next){
 
+     console.log("Debug inside /addWorkout");
+    
     /*Insert workout into the SQL table*/
     pool.query('INSERT INTO workouts (`name`, `reps`, `weight`, `date`, `lbs`) VALUES (?, ?, ?, ?, ?)', [req.query.name, req.query.reps, req.query.weight, req.query.date, req.query.lbs], function(err, result){
         if (err){
@@ -96,9 +98,91 @@ app.get('/createWorkoutTable',function(req, res, next){
 
 
 /*Route for editing workout*/
-app.get('/', function(req, res, next){
+app.get('/edit', function(req, res, next){
+    
+    console.log("inside edit");
 
-    var context = {};
+    /*Edit button was selected*/
+    if (req.body['Edit']){
+        
+        console.log("before makign query request");
+
+        /*Select row matching id*/
+        pool.query('SELECT * FROM workouts WHERE id=(?)', [req.body.id], function (err, rows, fields){
+
+            /*Error*/
+            if(err){
+                next(err);
+                console.log("error");
+                /*exit function*/
+                return;
+            }
+
+            /*store data from row fields*/
+            var data = rows[0];
+
+            /*Add additional fields to correspond to template*/
+            data.kilo;
+
+            /*data is in kilo*/
+            if (data.lbs == 0){
+                data.kilo = 1;
+            }
+            else{
+                /*data is in lbs*/
+                data.kilo = 0;
+            }
+
+            /*Reformat the data which was parsed on the client side*/
+            if(data.date != "0000-00-00"){
+                /*Create new data and store */
+                var date = new Date(rows[0].date);
+
+                /*Convert to JSON*/
+                date = date.toJSON();
+
+                /*Store 10 digits*/
+                data.date = date.substring(0,10);
+            }
+
+            console.log(data);
+            
+            /*Render the server side page with the current values*/
+            res.render('editWorkout', data);
+        });
+    }
+    else{
+
+        /*Row has been updated*/
+        pool.query('SELECT * FROM workouts WHERE id=(?)', [req.body.is], function(err, row){
+
+            /*Error*/
+            if(err){
+                next(err);
+                return;
+            }
+            if (row.length ==1){
+                var currentRow = row[0];
+
+                /*Update Values only IF different than current */
+
+                pool.query('UPDATE workouts SET name=?, reps=?, weight=?, date=?, lbs=?, WHERE id=?', [req.body.name || currRow.name, req.body.reps || currRow.reps, req.body.weight || currRow.weight, req.body.date || currRow.date, req.body.lbs, req.body.id], function(err, rows, results){
+
+                    var data = {};
+                    /*Error*/
+                    if(err){
+                        next(err);
+                        /*exit fn*/
+                        return;
+                    }
+
+                    /*Return to the static html page*/
+                    res.sendFile(__dirname + '/public/html/workouts.html');
+                });
+            }
+        });
+
+    }
     
 
 });
@@ -107,6 +191,7 @@ app.get('/', function(req, res, next){
 /*Route for deleting workout*/
 app.get('/deleteWorkout', function(req, res, next){
 
+    console.log("Debug inside /deleteWorkout");
     /*Delete row from sql with the corresponding id*/
 
     pool.query('DELETE FROM workouts WHERE ID=(?)', [req.query.id], function(err, result){
@@ -116,16 +201,10 @@ app.get('/deleteWorkout', function(req, res, next){
             /*exit function*/
             return;
         }
-        /*Send result from query request*/
+        /*Send result from query request to client*/
         res.send(JSON.stringify(result));
     });
 });
-
-
-   
-    
-    
-    /*Handle editing data*/
 
 
 
