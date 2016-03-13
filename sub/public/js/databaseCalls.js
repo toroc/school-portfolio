@@ -34,7 +34,9 @@ function bindButton() {
 		var reps = document.getElementById('reps').value;
 		var weight = document.getElementById('weight').value;
 		var date = document.getElementById('date').value;
-		var lbs = document.getElementById('lbs').value;
+		var radios = document.getElementsByName('unit');
+		var lbs;
+		var lbsString= "";
 
 		/*Ensure entire form was completed*/
 		if (name == "" || reps == "" || weight == "" || date == ""){
@@ -42,13 +44,25 @@ function bindButton() {
 			valid = false;
 		}
 
-		/*Determine wether lbs or kilos and set boolean*/
-		if (lbs == "lbs"){
-			lbs=1;
+		/*Determine wether lbs or kilograms*/
+		for (var i=0; i < radios.length; i++)
+		{
+			if (radios[i].checked){
+				lbsString = radios[i].value;
+				break;
+			}
+		}
+		
+
+		if (lbsString == "kilos"){
+			lbs = 0;
+			console.log("kilos");
 		}else{
-			lbs=0;
+			lbs =1;
 		}
 
+
+		
 		/*Perform based on response*/
 		request.onreadystatechange = function(){
 
@@ -58,7 +72,7 @@ function bindButton() {
 				var response = JSON.parse(request.responseText);
 
 				/**/
-				for (var i=0; response.length; i++){
+				for (var i=0; i < response.length; i++){
 					/*save response id*/
 					var responseId = response[i].id;
 
@@ -100,7 +114,7 @@ function bindButton() {
 			document.getElementById('reps').value = "";
 			document.getElementById('weight').value= "";
 			document.getElementById('date').value= "";
-			document.getElementById('lbs').value= "";
+			document.getElementById('unit').value= "";
 			
 		}
 		/*prevent default event*/
@@ -140,13 +154,16 @@ function createRow(data){
 	/*Handle unit and formatting */
 	var lbs = data.lbs;
 	
+	var lbsString= "";
 
 	if (lbs == 1){
-		lbs = "Pounds";
+		lbsString = "Pounds";
 	}
 	else{
-		lbs = "Kilograms";
+		lbsString = "Kilograms";
 	}
+
+	console.log(lbs);
 
 
     /*Set the data cells */
@@ -156,7 +173,7 @@ function createRow(data){
     newRow.children[2].textContent = data.reps;
     newRow.children[3].textContent = data.weight;
     newRow.children[4].textContent = date;
-    newRow.children[5].textContent = lbs;
+    newRow.children[5].textContent = lbsString;
 
 
 	/*Create Delete Form*/
@@ -186,7 +203,7 @@ function createRow(data){
 	var table = document.getElementById('workouts');
 
 	/*Append the row to table*/
-	table.appendChild(newRow);
+	//table.appendChild(newRow);
 
 	/*Add button listener*/
 	deleteButton.addEventListener('click', function(x){
@@ -239,5 +256,35 @@ function createRow(data){
 	}(deleteFormId.value));
 
 	/*Handle edit*/
+	/*Create Delete Form*/
+	var editForm = document.createElement("form");
+	/*Set form attributes*/
+	editForm.action="../../";
+	editForm.method = "post";
 
+	/*Create children*/
+	var editFormId = document.createElement("input");
+	var editButton = document.createElement("input");
+
+	/*Append Children*/
+	editForm.appendChild(editFormId);
+	editForm.appendChild(editButton);
+
+	/*Set the children attributes*/
+	editForm.children[0].className = "editId";
+	editForm.children[0].value = data.id;
+	editForm.children[0].name = "id";
+	editForm.children[0].type = "hidden";
+
+	editForm.children[1].textContent = "Edit";
+	editForm.children[1].type = "submit";
+	editForm.children[1].name = "Edit";
+	editForm.children[1].value = "Edit";
+
+
+	/*Append edit form to data cell*/
+	newRow.children[7].appendChild(editForm);
+
+	/*Append row to table*/
+	table.appendChild(newRow);
 }
