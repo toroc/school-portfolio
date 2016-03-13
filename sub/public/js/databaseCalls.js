@@ -94,7 +94,7 @@ function bindButton() {
                     /*find the id*/
                     while (!found && j < ids.length) {
 
-                        if (responseId == Number(ids[j].innerHTML)) {
+                        if (responseId == Number(ids[j].textContent)) {
                             found = true;
                         }
                         /*increment j*/
