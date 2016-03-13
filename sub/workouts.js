@@ -49,7 +49,7 @@ var pool = mysql.createPool({
 ******************************************************/
 
 
-/*Route for adding working*/
+/*Route for adding workout*/
 app.get('/addWorkout', function(req, res, next){
 
      console.log("Debug inside /addWorkout");
@@ -96,11 +96,10 @@ app.get('/createWorkoutTable',function(req, res, next){
     });
 });
 
-
 /*Route for editing workout*/
-app.get('/edit', function(req, res, next){
+app.post('/', function(req, res, next){
     
-    console.log("inside edit");
+    console.log("inside edit at beggining");
 
     /*Edit button was selected*/
     if (req.body['Edit']){
@@ -152,21 +151,30 @@ app.get('/edit', function(req, res, next){
         });
     }
     else{
+        
+        /**/
+        console.log("before selecting updated row");
 
         /*Row has been updated*/
-        pool.query('SELECT * FROM workouts WHERE id=(?)', [req.body.is], function(err, row){
+        pool.query('SELECT * FROM workouts WHERE id=(?)', [req.body.id], function(err, row){
 
             /*Error*/
             if(err){
                 next(err);
                 return;
             }
+            
+            console.log("before row length");
+            console.log(row);
+            console.log(row.length);
             if (row.length ==1){
+                
                 var currentRow = row[0];
 
                 /*Update Values only IF different than current */
+                console.log("before trying to update values");
 
-                pool.query('UPDATE workouts SET name=?, reps=?, weight=?, date=?, lbs=?, WHERE id=?', [req.body.name || currRow.name, req.body.reps || currRow.reps, req.body.weight || currRow.weight, req.body.date || currRow.date, req.body.lbs, req.body.id], function(err, rows, results){
+                pool.query('UPDATE workouts SET name=?, reps=?, weight=?, date=?, lbs=? WHERE id=?', [req.body.name || currentRow.name, req.body.reps || currentRow.reps, req.body.weight || currentRow.weight, req.body.date || currentRow.date, req.body.lbs, req.body.id], function(err, rows, results){
 
                     var data = {};
                     /*Error*/
@@ -194,7 +202,7 @@ app.get('/deleteWorkout', function(req, res, next){
     console.log("Debug inside /deleteWorkout");
     /*Delete row from sql with the corresponding id*/
 
-    pool.query('DELETE FROM workouts WHERE ID=(?)', [req.query.id], function(err, result){
+    pool.query('DELETE FROM workouts WHERE id=(?)', [req.query.id], function(err, result){
         /*Error*/
         if(err){
             next(err);
