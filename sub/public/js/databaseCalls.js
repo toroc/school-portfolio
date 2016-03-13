@@ -1,4 +1,11 @@
-
+// CS 290 -
+// Carol D Toro
+// toroc@oregonstate.edu
+// Winter 2016
+// Assignment: Database Interactions & UI
+// Filename: databaseCalls.js
+// URL: http://52.33.44.25:3001/public/html/workouts.html
+//
 
 document.addEventListener('DOMContentLoaded', bindButton);
 document.addEventListener('DOMContentLoaded', getTable);
