@@ -7,11 +7,11 @@
   <meta charset="UTF-8">
   <title>List of Workouts</title>
   <!-- css style sheet -->
-  <link rel="stylesheet" href="css/style.css" type="text/css">
+  <link rel="stylesheet" href="../css/style.css" type="text/css">
   <!--boot strap sheet-->
-  <link rel="stylesheet" href="css/lavish-bootstrap.css">
+  <link rel="stylesheet" href="../css/lavish-bootstrap.css">
   
-  <script src="js/databaseCalls.js"></script>
+  <script src="../js/databaseCalls.js"></script>
 </head>
 <body>
   <form>
@@ -35,17 +35,20 @@
       <input type="submit" id="newWorkout">
     </fieldset>
   </form>
-  <table id="workouts">
-    <caption>Your Workouts</caption>
-    <tr>
-      <th class="idTitle">Id</th>
-      <th>Exercise</th>
-      <th>Repetitions</th>
-      <th>Weight</th>
-      <th>Date</th>
-      <th>Unit</th>
-    </tr>
-  </table>   
+    <div class="table-responsive">
+        
+      <table id="workouts" class="table">
+        <caption>Your Workouts</caption>
+        <tr>
+          <th class="idTitle">Id</th>
+          <th>Exercise</th>
+          <th>Repetitions</th>
+          <th>Weight</th>
+          <th>Date</th>
+          <th>Unit</th>
+        </tr>
+      </table>
+    </div>
 
 </body>
 </html>
