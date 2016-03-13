@@ -94,6 +94,7 @@ app.get('/createWorkoutTable',function(req, res, next){
     });
 });
 
+
 /*Route for editing workout*/
 app.get('/', function(req, res, next){
 
@@ -104,14 +105,24 @@ app.get('/', function(req, res, next){
 
 
 /*Route for deleting workout*/
+app.get('/deleteWorkout', function(req, res, next){
+
+    /*Delete row from sql with the corresponding id*/
+
+    pool.query('DELETE FROM workouts WHERE ID=(?)', [req.query.id], function(err, result){
+        /*Error*/
+        if(err){
+            next(err);
+            /*exit function*/
+            return;
+        }
+        /*Send result from query request*/
+        res.send(JSON.stringify(result));
+    });
+});
 
 
-
-    
-    /*Handle deleting data*/
-    
-    
-    
+   
     
     
     /*Handle editing data*/
@@ -141,7 +152,7 @@ app.get('/reset-table',function(req,res,next){
 
       });
         /*Return to the static html page*/
-        res.sendFile(__dirname + 'public/html/workouts.html');
+        res.sendFile(__dirname + '/public/html/workouts.html');
     });
 });
 
