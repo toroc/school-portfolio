@@ -110,10 +110,12 @@ int main(int argc, char *argv[])
 	handleRequest(curSession);
 
 
+	/*Close socket*/
+	close(curSession->socketFD);
+	/*Deallocate memory*/
+	freeSession(curSession);
+
 	return 0;
-
-
-
 
 
 }
@@ -168,6 +170,10 @@ session* createSession(){
 ******************************************************/
 void freeSession(struct session *thisSession)
 {
+	freeTextStruct(thisSession->plainText);
+	freeTextStruct(thisSession->keyText);
+	freeTextStruct(thisSession->cipherText);
+
 	free(thisSession);
 
 }
@@ -250,6 +256,8 @@ void fileCharValidation(struct textStruct *thisText)
 	thisText->charCount=charCount-1;
 	thisText->validChars=VALID;
 
+	/*Get rid of the newline character*/
+	thisText->textBuffer[charCount-1]='\0';
 	
 
 	printf("%s: count %d\n", thisText->fileName, charCount);
@@ -569,10 +577,10 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 		error("Error: unable to read from socket");
 	}
 
-	debugTrace("before calling sendAck for data length", 362);
+	debugTrace("before calling sendAck for data length", 578);
 	sendAck(thisSession);
 
-	debugTrace("After calling sendAck for data length", 362);
+	debugTrace("After calling sendAck for data length", 581);
 
 	bytesRead =0;
 
@@ -580,7 +588,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 
 	/*Get data*/
 	do{
-		debugTrace("before trying to get file data", 378);
+		debugTrace("before trying to get file data", 589);
 		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
 
 		debugTrace("print bytes read line 381", bytesRead);
