@@ -28,8 +28,6 @@ int main(int argc, char*argv[])
 	checkCommandLine(argc, argv);
 	/*Store length*/
 	int keyLen = atoi(argv[1]);
-	/*DEBUG*/
-	printf("Debug: keyLen %d \n", keyLen);
 
 	/*Seed for rand*/
 	srand(time(NULL));
