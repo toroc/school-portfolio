@@ -5,15 +5,11 @@
 #   Last Modified: 03/14/2016
 #   Filename: otp_enc.c
 #	Usage: otp_enc <plainText> <keyText> <portNumber>
-#   Description:
-#
-#
-#
-#
-#
-#
-#
-#
+#   Description: This program executes the client side request
+#		of a pad-like system to encrypt a file with a key. 
+#		The program verifies that the files contain valid characters, 
+#		and sends the file along with key to server for encryption.
+#		The program receives the encrypted text and outputs it.
 ******************************************************/
 #include <stdio.h>
 #include <stdlib.h>
