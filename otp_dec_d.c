@@ -23,6 +23,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <signal.h>
 
 #define MAX_BUFFER 128000
 
@@ -101,6 +102,7 @@ int main(int argc, char *argv[])
 {
 	/*Set handler for children*/
 	signal(SIGCHLD, sigintHandle);
+
 	/*Check command line arguments are correct*/
 	checkCommandLine(argc, argv);
 
@@ -351,7 +353,7 @@ void handleConnections(struct session *thisSession)
 		handleChildProcess(thisSession, thisChild);
 
 		/*free data*/
-		freeSession(thisChild);
+		freeChildSession(thisChild);
 
 	}
 

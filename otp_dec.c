@@ -83,9 +83,8 @@ void handleRequest(struct session *thisSession);
 
 void sendHandShake(struct session *thisSession);
 void sendComms(struct session *thisSession, struct textStruct *thisText);
+void getData(struct session *thisSession, struct textStruct *thisText);
 
-
-void receiveCipher(struct session *thisSession);
 
 int confirmACK(const char *msg);
 
