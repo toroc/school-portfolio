@@ -308,12 +308,12 @@ void validateFiles(struct session *thisSession)
 
 	/*exit with error if files have invalid chars*/
 	if(thisSession->cipherText->validChars == INVALID){
-		fprintf(stderr,"Error: invalid characters in file \'%s\'", thisSession->cipherText->fileName);
+		fprintf(stderr,"Error: invalid characters in file \'%s\'\n", thisSession->cipherText->fileName);
 		exit(1);
 	}
 
 	if(thisSession->keyText->validChars == INVALID){
-		fprintf(stderr, "Error: invalid characters in file \'%s\'", thisSession->keyText->fileName);
+		fprintf(stderr, "Error: invalid characters in file \'%s\'\n", thisSession->keyText->fileName);
 		exit(1);
 	}
 
@@ -507,7 +507,7 @@ void sendHandShake(struct session *thisSession)
 	}
 
 	if(confirmACK(buff)==0){
-		printf("Could not contact otp_dec_d on port %d.\n", thisSession->serverPort);
+		printf("Error: could not contact otp_dec_d on port %d.\n", thisSession->serverPort);
 		exit(2);
 	}
 }

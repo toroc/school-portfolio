@@ -446,9 +446,6 @@ void receiveHandShake(struct session *thisSession)
 
 	int bytesRead = recv(thisSession->socketFD, buff, sizeof(buff), 0);
 
-	/*Print handshake received*/
-	printf(buff);
-	fflush(stdout);
 
 	if (bytesRead < 0){
 		error("Error: unable to read from socket.\n");
