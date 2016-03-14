@@ -333,16 +333,15 @@ void handleConnections(struct session *thisSession)
 	/*Inside child*/
 	if(childPID ==0){
 
-		debugTrace("inside child ", 325);
+		debugTrace("inside child ", 336);
 
 		struct childSession *thisChild = createChildSession();
 
 		handleChildProcess(thisSession, thisChild);
 
-		/*Close connection*/
-
 		/*free data*/
-		
+		freeSession(thisChild);
+
 	}
 
 
@@ -372,7 +371,8 @@ void handleChildProcess(struct session *thisSession, struct childSession *thisCh
 	sendData(thisSession, thisChild->cipherText);
 
 
-
+	/*Close connection*/
+	close(thisSession->socketFD);
 
 
 }
