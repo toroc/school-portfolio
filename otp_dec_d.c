@@ -121,20 +121,13 @@ int main(int argc, char *argv[])
 		handleConnections(curSession);
 	}
 
-	/**/
-
-
-
 	return 0;
-
-
-
 
 
 }
 
 void debugTrace(const char *msg, int line){
-	printf("OTP_DEC_D > %s from line # %d \n", msg, line);
+	perror("OTP_DEC_D > %s from line # %d \n", msg, line);
 
 	fflush(stdout);
 }
@@ -242,8 +235,6 @@ void checkCommandLine(int argcount, char *args[])
 void startServer(struct session *thisSession)
 {
 
-	debugTrace("begin startServer", 171);
-
 	int optVal =1;
 	/*Create server socket*/
 	thisSession->serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -276,7 +267,6 @@ void startServer(struct session *thisSession)
 		error("Error: unable to bind to host address.\n");
 	}
 
-	debugTrace("before listen ", 205);
 	/*Listen for incoming connections*/
 	result = listen(thisSession->serverSocket, 5);
 
@@ -287,8 +277,6 @@ void startServer(struct session *thisSession)
 
 void acceptConnection(struct session *thisSession)
 {
-	debugTrace("before accept connection ", 212);
-
 	/*Vars to store client's info at connection and accept*/
 	struct sockaddr_in clientAddr;
 	socklen_t clientLength = sizeof(clientAddr);
@@ -307,8 +295,6 @@ void acceptConnection(struct session *thisSession)
 		/*Get name of client*/
 		getnameinfo((struct sockaddr *)&clientAddr, sizeof(clientAddr),clientName,sizeof(clientName), service, sizeof(service),0);
 	}
-
-	debugTrace("After accept connection", 224);
 
 	/*Store client address in session data structure*/
 	thisSession->clientAddr = clientAddr;
@@ -332,7 +318,6 @@ void handleConnections(struct session *thisSession)
 
 	pid_t childPID;
 
-	debugTrace("before fork,", 312);
 	/*Fork*/
 	childPID  = fork();
 
@@ -345,8 +330,6 @@ void handleConnections(struct session *thisSession)
 
 	/*Inside child*/
 	if(childPID ==0){
-
-		debugTrace("inside child ", 336);
 
 		struct childSession *thisChild = createChildSession();
 
@@ -363,17 +346,12 @@ void handleConnections(struct session *thisSession)
 
 void handleChildProcess(struct session *thisSession, struct childSession *thisChild)
 {
-	debugTrace("handleChildProcess", 344);
-
 	/*Confirm Handshake*/
 	receiveHandShake(thisSession);
 
 	/*Get plain data*/
-	debugTrace("before sending for plain data", 350);
 	getData(thisSession, thisChild->cipherText);
 
-	debugTrace("before sending for key data", 353);
-	
 	/*Get key data*/
 	getData(thisSession, thisChild->keyText);
 
@@ -391,15 +369,12 @@ void handleChildProcess(struct session *thisSession, struct childSession *thisCh
 }
 void sendAck(struct session *thisSession)
 {
-	debugTrace("inside sendAck", 365);
 	int result;
 	char *msg = "ACK";
 
 
 	/*Send ACK*/
 	result = send(thisSession->socketFD, msg, sizeof(msg) , 0);
-
-	debugTrace("After trying to send ACK", 373);
 
 	if (result <0){
 		error("Error: unable to send to socket\n");
@@ -408,15 +383,11 @@ void sendAck(struct session *thisSession)
 
 void sendNACK(struct session *thisSession)
 {
-	debugTrace("inside sendAck", 382);
 	int result;
 	char *msg = "NACK";
 
-
 	/*Send ACK*/
 	result = send(thisSession->socketFD, msg, sizeof(msg) , 0);
-
-	debugTrace("After trying to send NACK", 336);
 
 	if (result <0){
 		error("Error: unable to send to socket\n");
@@ -426,7 +397,6 @@ void sendNACK(struct session *thisSession)
 
 void getData(struct session *thisSession, struct textStruct *thisText)
 {
-	debugTrace("getData ", 341);
 	/*Create buffers*/
 	char buffer[MAX_PACKET];
 	int msgLen;
@@ -436,11 +406,8 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	/*Clear out buffers*/
 	bzero(buffer, MAX_PACKET);
 
-	debugTrace("before calling recv", 350);
 	/*# of bytes to expect for text*/
 	bytesRead = recv(thisSession->socketFD, &msgLen, sizeof(int),0);
-
-	debugTrace("after calling recv", 354);
 
 	/*Ensure it was received*/
 	if(bytesRead <0)
@@ -448,39 +415,22 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 		error("Error: unable to read from socket");
 	}
 
-	debugTrace("before calling sendAck for data length", 362);
 	sendAck(thisSession);
-
-	debugTrace("After calling sendAck for data length", 362);
 
 	bytesRead =0;
 
-
-
 	/*Get data*/
 	do{
-		debugTrace("before trying to get file data", 378);
 		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
-
-		debugTrace("print bytes read line 381", bytesRead);
 
 	} while(bytesRead < msgLen);
 
-	/*Print data received*/
-
-	debugTrace("Before trying to print buffer", 402);
-	debugTrace(thisText->textBuffer, 380);
-
-	debugTrace("before calling ACK after data received", 382);
-	
 	/*Send ACK*/
 	sendAck(thisSession);
 
 	/*Set the text length*/
 	thisText->charCount = strlen(thisText->textBuffer);
 
-	/**/
-	debugTrace("Done with getData fn", 413);
 }
 
 
@@ -507,10 +457,8 @@ void receiveHandShake(struct session *thisSession)
 	if(strncmp(buff, success, len)==0){
 		/*send ACK*/
 		sendAck(thisSession);
-		debugTrace("handshake sucess", 473);
 	}
 	else{
-		debugTrace("sending NACK", 475);
 		sendNACK(thisSession);
 		/*Close socket*/
 		close(thisSession->socketFD);
@@ -525,7 +473,6 @@ void receiveHandShake(struct session *thisSession)
 
 int charNum(char c)
 {
-	debugTrace("inside charNum", 503);
 	if (c == 32)
 	{
 		return 26;
@@ -565,17 +512,13 @@ char decodeChar(char msgChar, char keyChar)
 	int msgVal = charNum(msgChar);
 	int keyVal = charNum(keyChar);
 
-	debugTrace("before mod charval",543);
-
 	int charVal = (msgVal - keyVal) % 27;
 
-	
 	/*Check if charVal is negative*/
 	if (charVal < 0){
 		charVal += 27;
 	}
 
-	debugTrace("char val is", charVal);
 	/*Get numerical ASCII value of charVal*/
 	char c = numChar(charVal);
 
@@ -612,8 +555,6 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 
 	int val = thisText->charCount;
 
-	debugTrace("Before sending expected bytes", 394);
-
 	/*Send number of bytes to expect*/
 	bytesSent = send(thisSession->socketFD, &val, sizeof(int),0);
 
@@ -622,24 +563,18 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 		error("No bytes sent");
 	}
 
-	debugTrace("Before waiting for ACK", 404);
-
 	/*Wait for ACK*/
 	result = recv(thisSession->socketFD, buffer, sizeof(buffer),0);
-
-	debugTrace("After calling rcv", 409);
 
 	/*Confirm ACK*/
 	if(confirmACK(buffer)==0)
 	{
-		debugTrace("Did not receive ACK for bytes to expect", 403);
+		//debugTrace("Did not receive ACK for bytes to expect", 403);
 	}
 
 	/*Set bytesSent to 0*/
 	bytesSent =0;
 
-
-	debugTrace("before sending file contents", 421);
 	/*Send MAX PACKET at a time*/
 	do
 	{
@@ -657,11 +592,11 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 
 	if(confirmACK(buffer)==0)
 	{
-		debugTrace("did not receive ACK for file data", 437);
+		//debugTrace("did not receive ACK for file data", 437);
 		
 	}
 	else{
-		debugTrace("received ACK for file data", 440);
+		//debugTrace("received ACK for file data", 440);
 		
 	}
 
