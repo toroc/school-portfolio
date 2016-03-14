@@ -189,7 +189,8 @@ void freeSession(struct session *thisSession)
 void checkCommandLine(int argcount, char *args[])
 {
 	if(argcount<=3){
-		perror("Usage: %s <plainText> <keyText> <portNumber>\n",args[0]);
+		printf("Usage: %s <plainText> <keyText> <portNumber>\n",args[0]);
+		fflush(stdout);
 		exit(2);
 	}
 }
@@ -502,7 +503,7 @@ void sendHandShake(struct session *thisSession)
 
 
 	if(confirmACK(buff)==0){
-		error("Could not contact otp_dec_d on port %d.\n", thisSession->serverPort);
+		printf("Could not contact otp_dec_d on port %d.\n", thisSession->serverPort);
 		exit(2);
 	}
 }
