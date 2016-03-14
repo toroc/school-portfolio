@@ -10,6 +10,9 @@
 #		The program verifies that the files contain valid characters, 
 #		and sends the file along with key to server for encryption.
 #		The program receives the encrypted text and outputs it.
+#	References: 
+#	Beej's Guide
+#		http://beej.us/guide/bgnet/output/html/multipage/syscalls.html#sendrecv
 ******************************************************/
 #include <stdio.h>
 #include <stdlib.h>
