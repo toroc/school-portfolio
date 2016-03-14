@@ -133,6 +133,14 @@ int main(int argc, char *argv[])
 
 }
 
+void sigintHandle(int sigNum)
+{
+	pid_t pid;
+	int status;
+
+	pid = waitpid(-1, &status, WNOHANG);
+}
+
 void debugTrace(const char *msg, int line){
 	printf("OTP_ENC_D > %s from line # %d \n", msg, line);
 
