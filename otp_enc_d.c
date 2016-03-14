@@ -137,7 +137,7 @@ void sigintHandle(int sigNum)
 }
 
 void debugTrace(const char *msg, int line){
-	perror("OTP_ENC_D > %s from line # %d \n", msg, line);
+	//printf("OTP_ENC_D > %s from line # %d \n", msg, line);
 
 	fflush(stdout);
 }

@@ -196,9 +196,9 @@ void checkCommandLine(int argcount, char *args[])
 
 
 void debugTrace(const char *msg, int line){
-	perror("OTP_ENC > %s from line # %d \n", msg, line);
+	//printf("OTP_ENC > %s from line # %d \n", msg, line);
 
-	fflush(stdout);
+	//fflush(stdout);
 }
 
 /******************************************************
@@ -502,7 +502,7 @@ void sendHandShake(struct session *thisSession)
 
 
 	if(confirmACK(buff)==0){
-		perror("Could not contact otp_dec_d on port %d.\n", thisSession->serverPort);
+		error("Could not contact otp_dec_d on port %d.\n", thisSession->serverPort);
 		exit(2);
 	}
 }

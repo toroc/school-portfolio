@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 }
 
 void debugTrace(const char *msg, int line){
-	perror("OTP_DEC_D > %s from line # %d \n", msg, line);
+	//printf("OTP_DEC_D > %s from line # %d \n", msg, line);
 
 	fflush(stdout);
 }
