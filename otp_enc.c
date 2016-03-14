@@ -259,11 +259,6 @@ void fileCharValidation(struct textStruct *thisText)
 	/*Get rid of the newline character*/
 	thisText->textBuffer[charCount-1]='\0';
 	
-
-	printf("%s: count %d\n", thisText->fileName, charCount);
-
-
-
 }
 
 /******************************************************
@@ -284,7 +279,6 @@ int validChar(char curChar)
 	}
 
 	/*Char not valid*/
-	printf("char not valid\n");
 	return 0;
 }
 
@@ -364,8 +358,6 @@ void startClient(struct session *thisSession)
 	thisSession->serverAddr.sin_family = AF_INET;
 	thisSession->serverAddr.sin_port=htons(thisSession->serverPort);
 	thisSession->serverAddr.sin_addr.s_addr = INADDR_ANY;
-
-
 
 
 	debugTrace("before connect", 321);
@@ -496,8 +488,7 @@ void handleRequest(struct session *thisSession)
 
 
 	/*Print response*/
-
-	printf(thisSession->cipherText->textBuffer);
+	printf("%s\n",thisSession->cipherText->textBuffer);
 
 }
 

@@ -57,6 +57,7 @@ struct session{
 
 };
 
+void sigintHandle(int sigNum);
 void debugTrace(const char *msg, int line);
 
 /*Data Structure Functions*/
@@ -98,6 +99,9 @@ char encodeChar(char msgChar, char keyChar);
 
 int main(int argc, char *argv[])
 {
+	/*Set handler for children*/
+	signal(SIGCHLD, sigintHandle);
+
 	/*Check command line arguments are correct*/
 	checkCommandLine(argc, argv);
 
@@ -527,7 +531,7 @@ char numChar(int val)
 	int i;
 	char c;
 
-	if (val <26)
+	if (val <26 && val>0)
 	{
 		i = val + 65;
 		c = i;
