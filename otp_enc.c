@@ -2,7 +2,7 @@
 #   CS 344 - Winter 2016 - Program 4
 #   By: Carol Toro
 #   File Created: 03/09/2016
-#   Last Modified: 03/09/2016
+#   Last Modified: 03/14/2016
 #   Filename: otp_enc.c
 #	Usage: otp_enc <plainText> <keyText> <portNumber>
 #   Description:
@@ -31,7 +31,7 @@
 typedef enum{INVALID=0, VALID}CTYPE;
 /*Session data structure*/
 typedef struct session session;
-
+/*text data strcture*/
 typedef struct textStruct textStruct;
 
 struct textStruct{
@@ -48,9 +48,7 @@ struct session{
 	struct textStruct *cipherText;
 	int serverPort; /*int to store server port*/
 	
-	int dataSocket;
 	int socketFD; /*client socket endpoint file descriptor*/
-	int serverFD; /*Socket file descriptor*/
 	struct sockaddr_in serverAddr;
 	struct hostent *serverIP;
 };
@@ -61,10 +59,11 @@ void freeTextStruct(struct textStruct *thisText);
 session* createSession();
 void freeSession(struct session *thisSession);
 
+void error(const char *msg);
+void debugTrace(const char *msg, int line);
+
+/*Validation Functions*/
 void checkCommandLine(int argcount, char *args[]);
-void sendAck(struct session *thisSession);
-
-
 void validateFiles(struct session *thisSession);
 
 /*File and Key validation helper functions*/
@@ -72,21 +71,15 @@ void fileCharValidation(struct textStruct *thisText);
 int validChar(char curChar);
 
 
-void error(const char *msg);
-void debugTrace(const char *msg, int line);
-
 void startClient(struct session *thisSession);
 void handleRequest(struct session *thisSession);
 
+/*Client / Server Communication functions*/
 void sendHandShake(struct session *thisSession);
 void sendComms(struct session *thisSession, struct textStruct *thisText);
-
 void getData(struct session *thisSession, struct textStruct *thisText);
-
-
+void sendAck(struct session *thisSession);
 int confirmACK(const char *msg);
-
-void confirmReceived(const char *msg, struct textStruct *thisText);
 
 int main(int argc, char *argv[])
 {
@@ -109,40 +102,17 @@ int main(int argc, char *argv[])
 	/*take care of request*/
 	handleRequest(curSession);
 
-
 	/*Close socket*/
 	close(curSession->socketFD);
+
 	/*Deallocate memory*/
 	freeSession(curSession);
 
 	return 0;
-
-
 }
 
-
-
-void error(const char *msg)
-{
-    perror(msg);
-    exit(1);
-}
-
-textStruct* createTextStruct()
-{
-	/*Allocate memory for file struct vars*/
-	textStruct *thisFileStruct = (textStruct*)malloc(sizeof(textStruct));
-	thisFileStruct->fileName=(char*)malloc(sizeof(char)*MAX_NAME);
-	thisFileStruct->charCount=0;
-	thisFileStruct->confirm=0;
-
-	return thisFileStruct;
-}
-void freeTextStruct(struct textStruct *thisText){
-	free(thisText);
-}
 /******************************************************
-#   Session Data Structure Functions
+#   Data Structure Functions
 ******************************************************/
 /******************************************************
 #   createSession
@@ -164,8 +134,8 @@ session* createSession(){
 
 /******************************************************
 #   freeSession
-#   @desc: Deallocate the memory used up by user
-#   @param: pointer to session datat structure object
+#   @desc: Deallocate the memory used up by session
+#   @param: pointer to session data structure object
 #   @return: void
 ******************************************************/
 void freeSession(struct session *thisSession)
@@ -178,6 +148,49 @@ void freeSession(struct session *thisSession)
 
 }
 
+/******************************************************
+#   createTextStruct
+#   @desc: allocate memory for  data structure
+#       and return pointer to textStruct object
+#   @param: n/a
+#   @return: pointer to textStruct *thisTextStruct object
+******************************************************/
+textStruct* createTextStruct()
+{
+	/*Allocate memory for file struct vars*/
+	textStruct *thisTextStruct = (textStruct*)malloc(sizeof(textStruct));
+	thisTextStruct->fileName=(char*)malloc(sizeof(char)*MAX_NAME);
+	thisTextStruct->charCount=0;
+	thisTextStruct->confirm=0;
+
+	return thisTextStruct;
+}
+/******************************************************
+#   freeTextStruct
+#   @desc: Deallocate the memory used up by text
+#   @param: pointer to textStruc data structure object
+#   @return: void
+******************************************************/
+void freeTextStruct(struct textStruct *thisText){
+	free(thisText);
+}
+
+/*Provided by assignment*/
+void error(const char *msg)
+{
+    perror(msg);
+    exit(1);
+}
+/*Used for debugging*/
+void debugTrace(const char *msg, int line){
+	//printf("OTP_ENC > %s from line # %d \n", msg, line);
+
+	//fflush(stdout);
+}
+
+/******************************************************
+#   Validation Functions
+******************************************************/
 /******************************************************
 #   checkCommandLine
 #   @desc: ensure program is executed with correct
@@ -195,25 +208,47 @@ void checkCommandLine(int argcount, char *args[])
 	}
 }
 
+/******************************************************
+#   validateFiles
+#   @desc:  exit with error if files contain invalid chars
+#   @param: pointer to session data structure
+#   @return: n/a
+******************************************************/
+void validateFiles(struct session *thisSession)
+{
 
-void debugTrace(const char *msg, int line){
-	//printf("OTP_ENC > %s from line # %d \n", msg, line);
+	/*Validate for bad characters*/
+	fileCharValidation(thisSession->plainText);
+	fileCharValidation(thisSession->keyText);
 
-	//fflush(stdout);
+	/*exit with error if files have invalid chars*/
+	if(thisSession->plainText->validChars == INVALID){
+		fprintf(stderr,"Error: invalid characters in file \'%s\'\n", thisSession->plainText->fileName);
+		exit(1);
+	}
+
+	if(thisSession->keyText->validChars == INVALID){
+		fprintf(stderr, "Error: invalid characters in file \'%s\'\n", thisSession->keyText->fileName);
+		exit(1);
+	}
+
+	/*exit with error: if keyText is shorter than plain file*/
+	if(thisSession->plainText->charCount > thisSession->keyText->charCount){
+		fprintf(stderr, "Error: key \'%s\' is too short\n", thisSession->keyText->fileName);
+		exit(1);
+	}
 }
 
 /******************************************************
-#   	funcName
-#   @desc:
-#
-#   @param:
-#
+#   fileCharValidation
+#   @desc: Execute flow for storing file contents, validating 
+#		for bad chars in, setting char count of files,
+#		and removing newline character
+#   @param: pointer to textStruct data structure
 #   @return: n/a
 ******************************************************/
-
 void fileCharValidation(struct textStruct *thisText)
 {
-	
 	/*File descriptor for reading file*/
 	FILE *fileFD;
 	int charCount=0;
@@ -227,7 +262,7 @@ void fileCharValidation(struct textStruct *thisText)
 		perror("File failed to open");
 	}
 
-	/*Save file contents in file buffer*/
+	/*Save file contents in text buffer*/
 	fgets(thisText->textBuffer, sizeof(thisText->textBuffer), fileFD);
 
 	charCount=strlen(thisText->textBuffer);
@@ -284,47 +319,15 @@ int validChar(char curChar)
 
 
 /******************************************************
-#   	validateFiles
-#   @desc: Execute flow for validating for bad chars in
-#		plain and key files, as well as char count,
-#		exit with error if invalid
+#   startClient
+#   @desc: Set up client connection to server
 #   @param: pointer to session data structure
-#   @return: n/a
+#   @return: 
 ******************************************************/
-void validateFiles(struct session *thisSession)
-{
-
-	/*Validate for bad characters*/
-	fileCharValidation(thisSession->plainText);
-	fileCharValidation(thisSession->keyText);
-
-	/*exit with error if files have invalid chars*/
-	if(thisSession->plainText->validChars == INVALID){
-		fprintf(stderr,"Error: invalid characters in file \'%s\'\n", thisSession->plainText->fileName);
-		exit(1);
-	}
-
-	if(thisSession->keyText->validChars == INVALID){
-		fprintf(stderr, "Error: invalid characters in file \'%s\'\n", thisSession->keyText->fileName);
-		exit(1);
-	}
-
-	/*exit with error: if keyText is shorter than plain file*/
-	if(thisSession->plainText->charCount > thisSession->keyText->charCount){
-		fprintf(stderr, "Error: key \'%s\' is too short\n", thisSession->keyText->fileName);
-		exit(1);
-	}
-
-
-}
-
-
-
 void startClient(struct session *thisSession)
 {
 
 	int optVal =1;
-
 	/*Create client socket endpoint*/
 	thisSession->socketFD=socket(AF_INET,SOCK_STREAM, 0);
 
@@ -366,13 +369,48 @@ void startClient(struct session *thisSession)
 	}
 
 }
+/******************************************************
+#   handleRequest
+#   @desc: Execute flow for sending initial handshake, 
+#		sending	plain text, sending key text, 
+#		receiving cipher text and printing it.
+#   @param: pointer to session data structure
+#   @return: n/a
+******************************************************/
+void handleRequest(struct session *thisSession)
+{
+	/*Take care of handshake*/
+	sendHandShake(thisSession);
+
+	/*Send plain file first*/
+	do {
+		sendComms(thisSession, thisSession->plainText);
+	}
+	while(thisSession->plainText->confirm == 0);
+
+	/*Send key file*/
+	do{
+		sendComms(thisSession, thisSession->keyText);
+	}
+	while(thisSession->keyText->confirm == 0);
+		
+	/*Get response*/
+	getData(thisSession, thisSession->cipherText);
+
+	/*Print response*/
+	printf("%s\n",thisSession->cipherText->textBuffer);
+
+}
 
 /******************************************************
-#   	funcName
-#   @desc:
-#
-#   @param:
-#
+#   Client / Server Communication Functions
+******************************************************/
+
+/******************************************************
+#   sendComms
+#   @desc: send text to connected server and ensure
+#		the entire text was sent to server.
+#   @param: pointer to sesssion and textStruct data
 #   @return: n/a
 ******************************************************/
 void sendComms(struct session *thisSession, struct textStruct *thisText)
@@ -387,10 +425,11 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
-	int val = thisText->charCount;
+	/*Get size of buffer*/
+	int textVal = sizeof(thisText->textBuffer);
 
 	/*Send number of bytes to expect*/
-	bytesSent = send(thisSession->socketFD, &val, sizeof(int),0);
+	bytesSent = send(thisSession->socketFD, &textVal, sizeof(int),0);
 
 	/*Ensure message sent*/
 	if(bytesSent <0){
@@ -399,7 +438,6 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 
 	/*Wait for ACK*/
 	result = recv(thisSession->socketFD, buffer, sizeof(buffer),0);
-
 
 	/*Confirm ACK*/
 	if(confirmACK(buffer)==0)
@@ -417,7 +455,7 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 		/*Send MAX PACKET at a time*/
 		bytesSent+=send(thisSession->socketFD, thisText->textBuffer, MAX_PACKET, 0);
 
-	}while(bytesSent < thisText->charCount);
+	}while(bytesSent < textVal);
 
 	
 	/*Clear the bufffer*/
@@ -426,6 +464,12 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 	/*Wait for received message*/
 	result = recv(thisSession->socketFD, buffer, sizeof(buffer), 0);
 
+	/*Ensure it worked*/
+	if(result < 0){
+		error("Error: unable to read data from socket.\n");
+	}
+
+	/*Confirm received entire file*/
 	if(confirmACK(buffer)==0)
 	{
 		thisText->confirm =0;
@@ -434,47 +478,16 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 		thisText->confirm = 1;
 	}
 
-	/*Ensure it worked*/
-	if(result < 0){
-		error("Error: unable to read data from socket.\n");
-	}
-
 	
-
 }
 
-
-void handleRequest(struct session *thisSession)
-{
-
-
-	/*Take care of handshake*/
-	sendHandShake(thisSession);
-
-	/*Send plain file first*/
-	do {
-		sendComms(thisSession, thisSession->plainText);
-	}
-	while(thisSession->plainText->confirm == 0);
-
-		
-	/*Send key file*/
-	do{
-		sendComms(thisSession, thisSession->keyText);
-	}
-	while(thisSession->keyText->confirm == 0);
-		
-	
-	/*Get response*/
-	getData(thisSession, thisSession->cipherText);
-
-
-	/*Print response*/
-	printf("%s\n",thisSession->cipherText->textBuffer);
-
-}
-
-
+/******************************************************
+#   sendHandShake
+#   @desc: send initial handshake to server and confirm
+#		it was unable to connect to otp_dec_d
+#   @param: pointer to session data structure
+#   @return: n/a
+******************************************************/
 void sendHandShake(struct session *thisSession)
 {
 	char buff[MAX_NAME];
@@ -485,7 +498,6 @@ void sendHandShake(struct session *thisSession)
 	char *msg ="ENC";
 
 	/*Send Handshake*/
-
 	int result = send(thisSession->socketFD, msg, sizeof(msg),0);
 
 	if (result <0)
@@ -509,7 +521,12 @@ void sendHandShake(struct session *thisSession)
 }
 
 
-
+/******************************************************
+#   confirmACK
+#   @desc: confirm buff has an ACK msg
+#   @param: const char *buff
+#   @return: 0: false, 1:true
+******************************************************/
 int confirmACK(const char *buff)
 {
 	char *success = "ACK";
@@ -520,7 +537,13 @@ int confirmACK(const char *buff)
 	}
 	return 0;
 }
-
+/******************************************************
+#   getData
+#   @desc: receive data containing ciphertext from
+#		connected server
+#   @param: pointer to session and textStruct data
+#   @return: n/a
+******************************************************/
 void getData(struct session *thisSession, struct textStruct *thisText)
 {
 	/*Create buffers*/
@@ -532,7 +555,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	/*Clear out buffers*/
 	bzero(buffer, MAX_PACKET);
 
-	/*# of chars to expect for text*/
+	/*# of bytes to expect for text*/
 	bytesRead = recv(thisSession->socketFD, &msgLen, sizeof(int),0);
 
 
@@ -550,11 +573,8 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	/*Get data*/
 	do{
 		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
-
-
 	} while(bytesRead < msgLen);
 
-	
 	/*Send ACK*/
 	sendAck(thisSession);
 
@@ -562,16 +582,19 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	thisText->charCount = strlen(thisText->textBuffer);
 
 }
-
+/******************************************************
+#   sendAck
+#   @desc: send ACK to connected server
+#   @param: pointer to session data structure
+#   @return: n/a
+******************************************************/
 void sendAck(struct session *thisSession)
 {
 	int result;
 	char *msg = "ACK";
 
-
 	/*Send ACK*/
 	result = send(thisSession->socketFD, msg, sizeof(msg) , 0);
-
 
 	if (result <0){
 		error("Error: unable to send to socket\n");
