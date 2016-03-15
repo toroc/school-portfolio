@@ -425,7 +425,7 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 	bzero(buffer, MAX_PACKET);
 
 	/*Get size of buffer*/
-	int textVal = thisText->charCount);
+	int textVal = thisText->charCount;
 
 	/*Send number of bytes to expect*/
 	bytesSent = send(thisSession->socketFD, &textVal, sizeof(int),0);
