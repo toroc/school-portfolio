@@ -338,6 +338,8 @@ void acceptConnection(struct session *thisSession)
 ******************************************************/
 void handleConnections(struct session *thisSession)
 {
+	/*Set handler for children*/
+	signal(SIGCHLD, sigintHandle);
 	
 	socklen_t clientLength = sizeof(thisSession->clientAddr);
 
