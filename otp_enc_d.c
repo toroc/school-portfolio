@@ -396,6 +396,9 @@ void handleConnections(struct session *thisSession)
 ******************************************************/
 void handleChildProcess(struct session *thisSession, struct childSession *thisChild)
 {
+	/*Set up Data Connection*/
+
+	
 	/*Confirm Handshake*/
 	receiveHandShake(thisSession);
 

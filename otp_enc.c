@@ -449,12 +449,12 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 
 
 	/*Send MAX PACKET at a time*/
-	do
-	{
+	while(bytesSent < textVal){
 		/*Send MAX PACKET at a time*/
 		bytesSent+=send(thisSession->socketFD, thisText->textBuffer, MAX_PACKET, 0);
-
-	}while(bytesSent < textVal);
+	}
+		
+	
 
 	
 	/*Clear the bufffer*/
