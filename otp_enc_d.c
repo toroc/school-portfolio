@@ -669,7 +669,7 @@ char numChar(int val)
 	int i;
 	char c;
 
-	if (val <26 && val>0)
+	if (val <26)
 	{
 		i = val + 65;
 		c = i;
