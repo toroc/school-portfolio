@@ -455,7 +455,7 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 
 
 	/*Send MAX PACKET at a time*/
-	while(bytesSent < textVal){
+	while(bytesSent < textSize){
 		/*Send MAX PACKET at a time*/
 		bytesSent+=send(thisSession->socketFD, thisText->textBuffer, MAX_PACKET, 0);
 	}
