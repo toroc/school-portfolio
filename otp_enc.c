@@ -425,10 +425,10 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 	bzero(buffer, MAX_PACKET);
 
 	/*Get size of buffer*/
-	int textVal = thisText->charCount;
+	long textVal = sizeof(thisText->textBuffer);
 
 	/*Send number of bytes to expect*/
-	bytesSent = send(thisSession->socketFD, &textVal, sizeof(int),0);
+	bytesSent = send(thisSession->socketFD, &textVal, sizeof(long),0);
 
 	/*Ensure message sent*/
 	if(bytesSent <0){
@@ -547,7 +547,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 {
 	/*Create buffers*/
 	char buffer[MAX_PACKET];
-	int msgLen;
+	long msgLen;
 
 	int bytesRead, result;
 
@@ -555,7 +555,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	bzero(buffer, MAX_PACKET);
 
 	/*# of bytes to expect for text*/
-	bytesRead = recv(thisSession->socketFD, &msgLen, sizeof(int),0);
+	bytesRead = recv(thisSession->socketFD, &msgLen, sizeof(long),0);
 
 
 	/*Ensure it was received*/

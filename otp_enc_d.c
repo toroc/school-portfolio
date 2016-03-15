@@ -565,10 +565,10 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
-	int val = thisText->charCount;
+	long val = sizeof(thisText->textBuffer);
 
 	/*Send number of bytes to expect*/
-	bytesSent = send(thisSession->socketFD, &val, sizeof(int),0);
+	bytesSent = send(thisSession->socketFD, &val, sizeof(long),0);
 
 	/*Ensure message sent*/
 	if(bytesSent <0){
