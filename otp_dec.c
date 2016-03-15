@@ -2,18 +2,17 @@
 #   CS 344 - Winter 2016 - Program 4
 #   By: Carol Toro
 #   File Created: 03/09/2016
-#   Last Modified: 03/09/2016
-#   Filename: otp_enc.c
-#	Usage: otp_enc <cipherText> <keyText> <portNumber>
-#   Description:
-#
-#
-#
-#
-#
-#
-#
-#
+#   Last Modified: 03/14/2016
+#   Filename: otp_dec.c
+#	Usage: otp_dec <cipherText> <keyText> <portNumber>
+#   Description: This program executes the client side request
+#		of a pad-like system to decrypt a file with a key. 
+#		The program verifies that the files contain valid characters, 
+#		and sends the file along with key to server for decryption.
+#		The program receives the decrypted text and outputs it.
+#	References: 
+#	Beej's Guide
+#		http://beej.us/guide/bgnet/output/html/multipage/syscalls.html#sendrecv
 ******************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,9 +47,7 @@ struct session{
 	struct textStruct *plainText;
 	int serverPort; /*int to store server port*/
 	
-	int dataSocket;
 	int socketFD; /*client socket endpoint file descriptor*/
-	int serverFD; /*Socket file descriptor*/
 	struct sockaddr_in serverAddr;
 	struct hostent *serverIP;
 };
@@ -61,34 +58,26 @@ void freeTextStruct(struct textStruct *thisText);
 session* createSession();
 void freeSession(struct session *thisSession);
 
+void error(const char *msg);
+void debugTrace(const char *msg, int line);
 
-/**/
-
+/*Validation Functions*/
 void checkCommandLine(int argcount, char *args[]);
-void sendAck(struct session *thisSession);
-
-
 void validateFiles(struct session *thisSession);
 
 /*File and Key validation helper functions*/
 void fileCharValidation(struct textStruct *thisText);
 int validChar(char curChar);
 
-
-void error(const char *msg);
-void debugTrace(const char *msg, int line);
-
 void startClient(struct session *thisSession);
 void handleRequest(struct session *thisSession);
 
+/*Client / Server Communication functions*/
 void sendHandShake(struct session *thisSession);
 void sendComms(struct session *thisSession, struct textStruct *thisText);
 void getData(struct session *thisSession, struct textStruct *thisText);
-
-
+void sendAck(struct session *thisSession);
 int confirmACK(const char *msg);
-
-void confirmReceived(const char *msg, struct textStruct *thisText);
 
 int main(int argc, char *argv[])
 {
@@ -111,14 +100,13 @@ int main(int argc, char *argv[])
 	/*take care of request*/
 	handleRequest(curSession);
 
-
 	/*Close socket*/
 	close(curSession->socketFD);
+
 	/*Deallocate memory*/
 	freeSession(curSession);
 
 	return 0;
-
 
 }
 
@@ -135,24 +123,15 @@ void error(const char *msg)
     perror(msg);
     exit(1);
 }
+void debugTrace(const char *msg, int line){
+	//printf("OTP_DEC > %s from line # %d \n", msg, line);
 
-
-
-textStruct* createTextStruct()
-{
-	/*Allocate memory for file struct vars*/
-	textStruct *thisFileStruct = (textStruct*)malloc(sizeof(textStruct));
-	thisFileStruct->fileName=(char*)malloc(sizeof(char)*MAX_NAME);
-	thisFileStruct->charCount=0;
-	thisFileStruct->confirm=0;
-
-	return thisFileStruct;
+	fflush(stdout);
 }
-void freeTextStruct(struct textStruct *thisText){
-	free(thisText);
-}
+
+
 /******************************************************
-#   Session Data Structure Functions
+#   Data Structure Functions
 ******************************************************/
 /******************************************************
 #   createSession
@@ -189,6 +168,36 @@ void freeSession(struct session *thisSession)
 }
 
 /******************************************************
+#   createTextStruct
+#   @desc: allocate memory for  data structure
+#       and return pointer to textStruct object
+#   @param: n/a
+#   @return: pointer to textStruct *thisTextStruct object
+******************************************************/
+textStruct* createTextStruct()
+{
+	/*Allocate memory for file struct vars*/
+	textStruct *thisTextStruct = (textStruct*)malloc(sizeof(textStruct));
+	thisTextStruct->fileName=(char*)malloc(sizeof(char)*MAX_NAME);
+	thisTextStruct->charCount=0;
+	thisTextStruct->confirm=0;
+
+	return thisTextStruct;
+}
+/******************************************************
+#   freeTextStruct
+#   @desc: Deallocate the memory used up by text
+#   @param: pointer to textStruc data structure object
+#   @return: void
+******************************************************/
+void freeTextStruct(struct textStruct *thisText){
+	free(thisText);
+}
+
+/******************************************************
+#   Validation Functions
+******************************************************/
+/******************************************************
 #   checkCommandLine
 #   @desc: ensure program is executed with correct
 #       command else, program ends
@@ -204,22 +213,14 @@ void checkCommandLine(int argcount, char *args[])
 	}
 }
 
-
-void debugTrace(const char *msg, int line){
-	//printf("OTP_DEC > %s from line # %d \n", msg, line);
-
-	fflush(stdout);
-}
-
 /******************************************************
-#   	funcName
-#   @desc:
-#
-#   @param:
-#
+#   fileCharValidation
+#   @desc: Execute flow for storing file contents, validating 
+#		for bad chars in, setting char count of files,
+#		and removing newline character
+#   @param: pointer to textStruct data structure
 #   @return: n/a
 ******************************************************/
-
 void fileCharValidation(struct textStruct *thisText)
 {
 	/*File descriptor for reading file*/
@@ -292,10 +293,8 @@ int validChar(char curChar)
 
 
 /******************************************************
-#   	validateFiles
-#   @desc: Execute flow for validating for bad chars in
-#		plain and key files, as well as char count,
-#		exit with error if invalid
+#   validateFiles
+#   @desc:  exit with error if files contain invalid chars
 #   @param: pointer to session data structure
 #   @return: n/a
 ******************************************************/
@@ -327,7 +326,12 @@ void validateFiles(struct session *thisSession)
 }
 
 
-
+/******************************************************
+#   startClient
+#   @desc: Set up client connection to server
+#   @param: pointer to session data structure
+#   @return: 
+******************************************************/
 void startClient(struct session *thisSession)
 {
 
@@ -374,13 +378,50 @@ void startClient(struct session *thisSession)
 	}
 
 }
+/******************************************************
+#   handleRequest
+#   @desc: Execute flow for sending initial handshake, 
+#		sending	cipher text, sending key text, 
+#		receiving plain text and printing it.
+#   @param: pointer to session data structure
+#   @return: n/a
+******************************************************/
+void handleRequest(struct session *thisSession)
+{
+
+	/*Take care of handshake*/
+	sendHandShake(thisSession);
+
+	/*Send plain file first*/
+	do {
+		sendComms(thisSession, thisSession->cipherText);
+	}
+	while(thisSession->cipherText->confirm == 0);
+
+		
+	/*Send key file*/
+	do{
+		sendComms(thisSession, thisSession->keyText);
+	}
+	while(thisSession->keyText->confirm == 0);
+		
+	/*Get response*/
+	getData(thisSession, thisSession->plainText);
+
+
+	/*Print response*/
+	printf("%s\n",thisSession->plainText->textBuffer);
+}
 
 /******************************************************
-#   	funcName
-#   @desc:
-#
-#   @param:
-#
+#   Client / Server Communication Functions
+******************************************************/
+
+/******************************************************
+#   sendComms
+#   @desc: send text to connected server and ensure
+#		the entire text was sent to server.
+#   @param: pointer to sesssion and textStruct data
 #   @return: n/a
 ******************************************************/
 void sendComms(struct session *thisSession, struct textStruct *thisText)
@@ -395,7 +436,7 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
-	int val = thisText->charCount;
+	int val = sizeof(thisText->textBuffer);
 
 	/*Send number of bytes to expect*/
 	bytesSent = send(thisSession->socketFD, &val, sizeof(int),0);
@@ -424,7 +465,7 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 		/*Send MAX PACKET at a time*/
 		bytesSent+=send(thisSession->socketFD, thisText->textBuffer, MAX_PACKET, 0);
 
-	}while(bytesSent < thisText->charCount);
+	}while(bytesSent < val);
 
 	
 	/*Clear the bufffer*/
@@ -452,35 +493,13 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 
 }
 
-
-void handleRequest(struct session *thisSession)
-{
-
-	/*Take care of handshake*/
-	sendHandShake(thisSession);
-
-	/*Send plain file first*/
-	do {
-		sendComms(thisSession, thisSession->cipherText);
-	}
-	while(thisSession->cipherText->confirm == 0);
-
-		
-	/*Send key file*/
-	do{
-		sendComms(thisSession, thisSession->keyText);
-	}
-	while(thisSession->keyText->confirm == 0);
-		
-	/*Get response*/
-	getData(thisSession, thisSession->plainText);
-
-
-	/*Print response*/
-	printf("%s\n",thisSession->plainText->textBuffer);
-}
-
-
+/******************************************************
+#   sendHandShake
+#   @desc: send initial handshake to server and confirm
+#		it was unable to connect to otp_enc_d
+#   @param: pointer to session data structure
+#   @return: n/a
+******************************************************/
 void sendHandShake(struct session *thisSession)
 {
 	char buff[MAX_NAME];
@@ -507,13 +526,16 @@ void sendHandShake(struct session *thisSession)
 	}
 
 	if(confirmACK(buff)==0){
-		printf("Error: could not contact otp_dec_d on port %d.\n", thisSession->serverPort);
+		printf("Error: could not contact otp_enc_d on port %d.\n", thisSession->serverPort);
 		exit(2);
 	}
 }
-
-
-
+/******************************************************
+#   confirmACK
+#   @desc: confirm buff has an ACK msg
+#   @param: const char *buff
+#   @return: 0: false, 1:true
+******************************************************/
 int confirmACK(const char *buff)
 {
 	char *success = "ACK";
@@ -524,7 +546,13 @@ int confirmACK(const char *buff)
 	}
 	return 0;
 }
-
+/******************************************************
+#   getData
+#   @desc: receive data containing plaintext from
+#		connected server
+#   @param: pointer to session and textStruct data
+#   @return: n/a
+******************************************************/
 void getData(struct session *thisSession, struct textStruct *thisText)
 {
 	/*Create buffers*/
@@ -565,7 +593,12 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	thisText->charCount = strlen(thisText->textBuffer);
 
 }
-
+/******************************************************
+#   sendAck
+#   @desc: send ACK to connected server
+#   @param: pointer to session data structure
+#   @return: n/a
+******************************************************/
 void sendAck(struct session *thisSession)
 {
 	int result;
