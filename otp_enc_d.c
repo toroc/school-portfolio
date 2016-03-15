@@ -496,10 +496,11 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 
 
 	/*Get data*/
-	do{
+	while(bytesRead < msgLen){
 		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
+	}
 
-	} while(bytesRead < msgLen);
+
 
 	
 	/*Send ACK*/
@@ -591,14 +592,13 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 
 
 	/*Send MAX PACKET at a time*/
-	do
-	{
+	while(bytesSent < val){
 		/*Send MAX PACKET at a time*/
 		bytesSent+=send(thisSession->socketFD, thisText->textBuffer, MAX_PACKET, 0);
 
-	}while(bytesSent < val);
+	}
 
-	
+
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 

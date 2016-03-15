@@ -455,8 +455,6 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 	}
 		
 	
-
-	
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
@@ -570,9 +568,9 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 
 
 	/*Get data*/
-	do{
+	while(bytesRead< msgLen)
 		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
-	} while(bytesRead < msgLen);
+	} 
 
 	/*Send ACK*/
 	sendAck(thisSession);
