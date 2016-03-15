@@ -468,7 +468,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 {
 	/*Create buffers*/
 	char buffer[MAX_PACKET];
-	long msgLen;
+	int msgLen;
 
 	int bytesRead, result;
 
@@ -476,7 +476,8 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	bzero(buffer, MAX_PACKET);
 
 	/*# of bytes to expect for text*/
-	bytesRead = recv(thisSession->socketFD, &msgLen, sizeof(long),0);
+	bytesRead = recv(thisSession->socketFD, (char*)&msgLen, sizeof(msgLen),0);
+
 
 	/*Ensure it was received*/
 	if(bytesRead <0)
@@ -488,11 +489,12 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 
 	bytesRead =0;
 
-	/*Get data*/
-	do{
-		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
 
-	} while(bytesRead < msgLen);
+	/*Get data*/
+	while(bytesRead< msgLen){
+		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
+	}
+	
 
 	/*Send ACK*/
 	sendAck(thisSession);
@@ -501,6 +503,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	thisText->charCount = strlen(thisText->textBuffer);
 
 }
+
 
 /******************************************************
 #   receiveHandShake
@@ -560,10 +563,14 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
-	long val = sizeof(thisText->textBuffer);
+	/*Get size of buffer*/
+	int textSize = strlen(thisText->textBuffer);
+
+	/*Conver to netbyte order*/
+	textSize = htonl(textSize);
 
 	/*Send number of bytes to expect*/
-	bytesSent = send(thisSession->socketFD, &val, sizeof(long),0);
+	bytesSent = send(thisSession->socketFD, &textSize, sizeof(textSize),0);
 
 	/*Ensure message sent*/
 	if(bytesSent <0){
@@ -588,7 +595,7 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 		/*Send MAX PACKET at a time*/
 		bytesSent+=send(thisSession->socketFD, thisText->textBuffer, MAX_PACKET, 0);
 
-	}while(bytesSent < val);
+	}while(bytesSent < textSize);
 
 	
 	/*Clear the bufffer*/

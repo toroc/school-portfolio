@@ -48,6 +48,7 @@ struct session{
 	int serverPort; /*int to store server port*/
 	
 	int socketFD; /*client socket endpoint file descriptor*/
+	int newSocketFD;
 	struct sockaddr_in serverAddr;
 	struct hostent *serverIP;
 };
@@ -75,7 +76,7 @@ void handleRequest(struct session *thisSession);
 
 /*Client / Server Communication functions*/
 void sendHandShake(struct session *thisSession);
-void sendComms(struct session *thisSession, struct textStruct *thisText);
+void sendData(struct session *thisSession, struct textStruct *thisText);
 void getData(struct session *thisSession, struct textStruct *thisText);
 void sendAck(struct session *thisSession);
 int confirmACK(const char *msg);
@@ -370,7 +371,8 @@ void startClient(struct session *thisSession)
 }
 /******************************************************
 #   handleRequest
-#   @desc: Execute flow for sending initial handshake, 
+#   @desc: Execute flow for establishing new connection,
+#		 sending initial handshake, 
 #		sending	plain text, sending key text, 
 #		receiving cipher text and printing it.
 #   @param: pointer to session data structure
@@ -378,18 +380,19 @@ void startClient(struct session *thisSession)
 ******************************************************/
 void handleRequest(struct session *thisSession)
 {
+
 	/*Take care of handshake*/
 	sendHandShake(thisSession);
 
 	/*Send plain file first*/
 	do {
-		sendComms(thisSession, thisSession->plainText);
+		sendData(thisSession, thisSession->plainText);
 	}
 	while(thisSession->plainText->confirm == 0);
 
 	/*Send key file*/
 	do{
-		sendComms(thisSession, thisSession->keyText);
+		sendData(thisSession, thisSession->keyText);
 	}
 	while(thisSession->keyText->confirm == 0);
 		
@@ -406,13 +409,13 @@ void handleRequest(struct session *thisSession)
 ******************************************************/
 
 /******************************************************
-#   sendComms
+#   sendData
 #   @desc: send text to connected server and ensure
 #		the entire text was sent to server.
 #   @param: pointer to sesssion and textStruct data
 #   @return: n/a
 ******************************************************/
-void sendComms(struct session *thisSession, struct textStruct *thisText)
+void sendData(struct session *thisSession, struct textStruct *thisText)
 {
 	
 	int result;
@@ -425,10 +428,13 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 	bzero(buffer, MAX_PACKET);
 
 	/*Get size of buffer*/
-	long textVal = sizeof(thisText->textBuffer);
+	int textSize = strlen(thisText->textBuffer);
+
+	/*Conver to netbyte order*/
+	textSize = htonl(textSize);
 
 	/*Send number of bytes to expect*/
-	bytesSent = send(thisSession->socketFD, &textVal, sizeof(long),0);
+	bytesSent = send(thisSession->socketFD, &textSize, sizeof(textSize),0);
 
 	/*Ensure message sent*/
 	if(bytesSent <0){
@@ -545,7 +551,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 {
 	/*Create buffers*/
 	char buffer[MAX_PACKET];
-	long msgLen;
+	int msgLen;
 
 	int bytesRead, result;
 
@@ -553,7 +559,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	bzero(buffer, MAX_PACKET);
 
 	/*# of bytes to expect for text*/
-	bytesRead = recv(thisSession->socketFD, &msgLen, sizeof(long),0);
+	bytesRead = recv(thisSession->socketFD, (char*)&msgLen, sizeof(msgLen),0);
 
 
 	/*Ensure it was received*/
@@ -568,9 +574,10 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 
 
 	/*Get data*/
-	while(bytesRead< msgLen)
+	while(bytesRead< msgLen){
 		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
-	} 
+	}
+	
 
 	/*Send ACK*/
 	sendAck(thisSession);

@@ -74,7 +74,7 @@ void handleRequest(struct session *thisSession);
 
 /*Client / Server Communication functions*/
 void sendHandShake(struct session *thisSession);
-void sendComms(struct session *thisSession, struct textStruct *thisText);
+void sendData(struct session *thisSession, struct textStruct *thisText);
 void getData(struct session *thisSession, struct textStruct *thisText);
 void sendAck(struct session *thisSession);
 int confirmACK(const char *msg);
@@ -394,14 +394,14 @@ void handleRequest(struct session *thisSession)
 
 	/*Send plain file first*/
 	do {
-		sendComms(thisSession, thisSession->cipherText);
+		sendData(thisSession, thisSession->cipherText);
 	}
 	while(thisSession->cipherText->confirm == 0);
 
 		
 	/*Send key file*/
 	do{
-		sendComms(thisSession, thisSession->keyText);
+		sendData(thisSession, thisSession->keyText);
 	}
 	while(thisSession->keyText->confirm == 0);
 		
@@ -418,13 +418,13 @@ void handleRequest(struct session *thisSession)
 ******************************************************/
 
 /******************************************************
-#   sendComms
+#   sendData
 #   @desc: send text to connected server and ensure
 #		the entire text was sent to server.
 #   @param: pointer to sesssion and textStruct data
 #   @return: n/a
 ******************************************************/
-void sendComms(struct session *thisSession, struct textStruct *thisText)
+void sendData(struct session *thisSession, struct textStruct *thisText)
 {
 	
 	int result;
@@ -436,10 +436,14 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
-	long val = sizeof(thisText->textBuffer);
+	/*Get size of buffer*/
+	int textSize = strlen(thisText->textBuffer);
+
+	/*Conver to netbyte order*/
+	textSize = htonl(textSize);
 
 	/*Send number of bytes to expect*/
-	bytesSent = send(thisSession->socketFD, &val, sizeof(long),0);
+	bytesSent = send(thisSession->socketFD, &textSize, sizeof(textSize),0);
 
 	/*Ensure message sent*/
 	if(bytesSent <0){
@@ -460,13 +464,11 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 
 
 	/*Send MAX PACKET at a time*/
-	do
-	{
+	while(bytesSent < textVal){
 		/*Send MAX PACKET at a time*/
 		bytesSent+=send(thisSession->socketFD, thisText->textBuffer, MAX_PACKET, 0);
-
-	}while(bytesSent < val);
-
+	}
+		
 	
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
@@ -474,23 +476,21 @@ void sendComms(struct session *thisSession, struct textStruct *thisText)
 	/*Wait for received message*/
 	result = recv(thisSession->socketFD, buffer, sizeof(buffer), 0);
 
-	if(confirmACK(buffer)==0)
-	{
-		//debugTrace("did not receive ACK for file data", 437);
-		thisText->confirm =0;
-	}
-	else{
-		//debugTrace("received ACK for file data", 440);
-		thisText->confirm = 1;
-	}
-
 	/*Ensure it worked*/
 	if(result < 0){
 		error("Error: unable to read data from socket.\n");
 	}
 
-	
+	/*Confirm received entire file*/
+	if(confirmACK(buffer)==0)
+	{
+		thisText->confirm =0;
+	}
+	else{
+		thisText->confirm = 1;
+	}
 
+	
 }
 
 /******************************************************
@@ -557,7 +557,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 {
 	/*Create buffers*/
 	char buffer[MAX_PACKET];
-	long msgLen;
+	int msgLen;
 
 	int bytesRead, result;
 
@@ -565,7 +565,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	bzero(buffer, MAX_PACKET);
 
 	/*# of bytes to expect for text*/
-	bytesRead = recv(thisSession->socketFD, &msgLen, sizeof(long),0);
+	bytesRead = recv(thisSession->socketFD, (char*)&msgLen, sizeof(msgLen),0);
 
 
 	/*Ensure it was received*/
@@ -579,12 +579,11 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	bytesRead =0;
 
 
-
 	/*Get data*/
-	do{
+	while(bytesRead< msgLen){
 		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
-
-	} while(bytesRead < msgLen);
+	}
+	
 
 	/*Send ACK*/
 	sendAck(thisSession);

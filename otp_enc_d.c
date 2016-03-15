@@ -6,11 +6,11 @@
 #   Filename: otp_enc_d.c
 #	Usage: otp_enc_d <portNumber>
 #    Description: This program executes the server side request
-#		from a client of a pad-like system to encrypt a file with a key. 
+#		from a client of a pad-like system to encrypt a file with a key.
 #		The program receives the file text along with the key from the client.
 #		The program encrypts the file with the key and sends to the client
 #		the encrypted text.
-#	References: 
+#	References:
 #	Beej's Guide
 #		http://beej.us/guide/bgnet/output/html/multipage/syscalls.html#sendrecv
 ******************************************************/
@@ -43,12 +43,16 @@ struct childSession{
 	struct textStruct *plainText;
 	struct textStruct *keyText;
 	struct textStruct *cipherText;
+	char *childPort;
+	int newsocketFD;
+	int newChildSocketFD;
 };
 
 struct session{
 	int serverSocket; /*Server socket for listening*/
 	int serverPort; /*int to store server port*/
 	int socketFD; /*client socket for connection*/
+	int newsocketFD;
 	struct sockaddr_in serverAddr;
 	struct sockaddr_in clientAddr;
 	char *clientName;
@@ -111,11 +115,10 @@ int main(int argc, char *argv[])
 	startServer(curSession);
 
 	/**/
-	while(1)
-	{
-		/*Handle connections*/
-		handleConnections(curSession);
-	}
+
+	/*Handle connections*/
+	handleConnections(curSession);
+
 
 	return 0;
 
@@ -257,7 +260,7 @@ void checkCommandLine(int argcount, char *args[])
 
 /******************************************************
 #   fnName
-#   @desc: 
+#   @desc:
 #   @param: pointer to session data structure object
 #   @return: void
 ******************************************************/
@@ -305,7 +308,7 @@ void startServer(struct session *thisSession)
 
 /******************************************************
 #   fnName
-#   @desc: 
+#   @desc:
 #   @param: pointer to session data structure object
 #   @return: void
 ******************************************************/
@@ -343,44 +346,63 @@ void acceptConnection(struct session *thisSession)
 ******************************************************/
 void handleConnections(struct session *thisSession)
 {
-	/*Set handler for children*/
-	signal(SIGCHLD, sigintHandle);
-	
-	socklen_t clientLength = sizeof(thisSession->clientAddr);
+	/*Counter for port*/
+	int portCounter;
+	/*Loop waiting for a connection*/
+	while(1){
 
-	/*Wait for connection*/
-	thisSession->socketFD = accept(thisSession->serverSocket, (struct sockaddr*) &thisSession->clientAddr, &clientLength);
+		/*Increment portCounter*/
+		portCounter++;
 
-	/*Ensure it worked*/
-	if (thisSession->socketFD<0)
-	{
-		error("Error: unable to accept connection.\n");
+		/*Set handler for children*/
+		signal(SIGCHLD, sigintHandle);
+
+		socklen_t clientLength = sizeof(thisSession->clientAddr);
+
+		/*Wait for connection*/
+		thisSession->socketFD = accept(thisSession->serverSocket, (struct sockaddr*) &thisSession->clientAddr, &clientLength);
+
+		/*Ensure it worked*/
+		if (thisSession->socketFD<0)
+		{
+			error("Error: unable to accept connection.\n");
+		}
+
+		pid_t childPID;
+
+		/*Fork*/
+		childPID  = fork();
+
+		/*Check for error*/
+		if(childPID < 0){
+			/*Close socket*/
+			close(thisSession->socketFD);
+			error("Error: unable to fork new process.\n");
+
+		}
+		/*Inside child*/
+		if(childPID ==0){
+			/*close the old server socket that is bound to main port*/
+			close(thisSession->serverSocket);
+
+			struct childSession *thisChild = createChildSession();
+
+			/**/
+			handleChildProcess(thisSession, thisChild);
+
+			/*free data*/
+			freeChildSession(thisChild);
+
+		}
+		else{
+			/*back to parent*/
+			/*Close child socket*/
+			close(thisSession->socketFD);
+		}
+
 	}
 
 
-	pid_t childPID;
-
-	/*Fork*/
-	childPID  = fork();
-
-	/*Check for error*/
-	if(childPID < 0){
-
-		error("Error: unable to fork new process.\n");
-
-	}
-
-	/*Inside child*/
-	if(childPID ==0){
-
-		struct childSession *thisChild = createChildSession();
-		/**/
-		handleChildProcess(thisSession, thisChild);
-
-		/*free data*/
-		freeChildSession(thisChild);
-
-	}
 
 }
 /******************************************************
@@ -388,15 +410,13 @@ void handleConnections(struct session *thisSession)
 ******************************************************/
 /******************************************************
 #   handleChildProcess
-#   @desc: Execute flow for receiving data from client, 
-#		encoding data, and sending encoded data to client.#		
+#   @desc: Execute flow for receiving data from client,
+#		encoding data, and sending encoded data to client.#
 #   @param: pointer to session data structure object
 #   @return: void
 ******************************************************/
 void handleChildProcess(struct session *thisSession, struct childSession *thisChild)
 {
-	/*Set up Data Connection*/
-
 
 	/*Confirm Handshake*/
 	receiveHandShake(thisSession);
@@ -473,7 +493,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 {
 	/*Create buffers*/
 	char buffer[MAX_PACKET];
-	long msgLen;
+	int msgLen;
 
 	int bytesRead, result;
 
@@ -481,7 +501,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	bzero(buffer, MAX_PACKET);
 
 	/*# of bytes to expect for text*/
-	bytesRead = recv(thisSession->socketFD, &msgLen, sizeof(int),0);
+	bytesRead = recv(thisSession->socketFD, (char*)&msgLen, sizeof(msgLen),0);
 
 
 	/*Ensure it was received*/
@@ -496,13 +516,11 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 
 
 	/*Get data*/
-	while(bytesRead < msgLen){
+	while(bytesRead< msgLen){
 		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
 	}
-
-
-
 	
+
 	/*Send ACK*/
 	sendAck(thisSession);
 
@@ -548,7 +566,7 @@ void receiveHandShake(struct session *thisSession)
 		_exit(0);
 	}
 
-	
+
 }
 /******************************************************
 #   sendData
@@ -559,6 +577,7 @@ void receiveHandShake(struct session *thisSession)
 ******************************************************/
 void sendData(struct session *thisSession, struct textStruct *thisText)
 {
+	
 	int result;
 	int bytesSent;
 
@@ -568,10 +587,14 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
-	long val = sizeof(thisText->textBuffer);
+	/*Get size of buffer*/
+	int textSize = strlen(thisText->textBuffer);
+
+	/*Conver to netbyte order*/
+	textSize = htonl(textSize);
 
 	/*Send number of bytes to expect*/
-	bytesSent = send(thisSession->socketFD, &val, sizeof(long),0);
+	bytesSent = send(thisSession->socketFD, &textSize, sizeof(textSize),0);
 
 	/*Ensure message sent*/
 	if(bytesSent <0){
@@ -592,36 +615,25 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 
 
 	/*Send MAX PACKET at a time*/
-	while(bytesSent < val){
+	while(bytesSent < textSize){
 		/*Send MAX PACKET at a time*/
 		bytesSent+=send(thisSession->socketFD, thisText->textBuffer, MAX_PACKET, 0);
-
 	}
-
-
+		
+	
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
 	/*Wait for received message*/
 	result = recv(thisSession->socketFD, buffer, sizeof(buffer), 0);
 
-	if(confirmACK(buffer)==0)
-	{
-		//debugTrace("did not receive ACK for file data", 437);
-		
-	}
-	else{
-		//debugTrace("received ACK for file data", 440);
-		
-	}
-
 	/*Ensure it worked*/
 	if(result < 0){
 		error("Error: unable to read data from socket.\n");
 	}
 
-	
 
+	
 }
 /******************************************************
 #   confirmACK
@@ -656,15 +668,15 @@ int charNum(char c)
 	{
 		return 26;
 	}
-	
-	return c - 65;	
+
+	return c - 65;
 
 }
 /******************************************************
 #   charNum
-#   @desc: calculate ASCII char corresponding to val 
+#   @desc: calculate ASCII char corresponding to val
 #   @param: int val
-#   @return: ASCII char 
+#   @return: ASCII char
 ******************************************************/
 char numChar(int val)
 {
@@ -675,13 +687,13 @@ char numChar(int val)
 	{
 		i = val + 65;
 		c = i;
-		
+
 	}
 	else
 	{
 		/*Space character*/
 		i = 32;
-		c = i;	
+		c = i;
 	}
 
 	return c;
