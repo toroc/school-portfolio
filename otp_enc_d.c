@@ -346,13 +346,10 @@ void acceptConnection(struct session *thisSession)
 ******************************************************/
 void handleConnections(struct session *thisSession)
 {
-	/*Counter for port*/
-	int portCounter;
+	
 	/*Loop waiting for a connection*/
 	while(1){
 
-		/*Increment portCounter*/
-		portCounter++;
 
 		/*Set handler for children*/
 		signal(SIGCHLD, sigintHandle);
@@ -396,12 +393,15 @@ void handleConnections(struct session *thisSession)
 		}
 		else{
 			/*back to parent*/
-			/*Close child socket*/
+			/*Close  socket used by child*/
 			close(thisSession->socketFD);
+
+			int status;
+			/*Wait for all child process to end*/
+			waitpid(-1, &status, WNOHANG);
 		}
 
 	}
-
 
 
 }
@@ -432,10 +432,6 @@ void handleChildProcess(struct session *thisSession, struct childSession *thisCh
 
 	/*Send message*/
 	sendData(thisSession, thisChild->cipherText);
-
-	/*Close connection*/
-	close(thisSession->socketFD);
-
 
 }
 

@@ -338,45 +338,62 @@ void acceptConnection(struct session *thisSession)
 ******************************************************/
 void handleConnections(struct session *thisSession)
 {
-	/*Set handler for children*/
-	signal(SIGCHLD, sigintHandle);
+	
+	/*Loop waiting for a connection*/
+	while(1){
 
-	socklen_t clientLength = sizeof(thisSession->clientAddr);
 
-	/*Wait for connection*/
-	thisSession->socketFD = accept(thisSession->serverSocket, (struct sockaddr*) &thisSession->clientAddr, &clientLength);
+		/*Set handler for children*/
+		signal(SIGCHLD, sigintHandle);
 
-	/*Ensure it worked*/
-	if (thisSession->socketFD<0)
-	{
-		error("Error: unable to accept connection.\n");
+		socklen_t clientLength = sizeof(thisSession->clientAddr);
+
+		/*Wait for connection*/
+		thisSession->socketFD = accept(thisSession->serverSocket, (struct sockaddr*) &thisSession->clientAddr, &clientLength);
+
+		/*Ensure it worked*/
+		if (thisSession->socketFD<0)
+		{
+			error("Error: unable to accept connection.\n");
+		}
+
+		pid_t childPID;
+
+		/*Fork*/
+		childPID  = fork();
+
+		/*Check for error*/
+		if(childPID < 0){
+			/*Close socket*/
+			close(thisSession->socketFD);
+			error("Error: unable to fork new process.\n");
+
+		}
+		/*Inside child*/
+		if(childPID ==0){
+			/*close the old server socket that is bound to main port*/
+			close(thisSession->serverSocket);
+
+			struct childSession *thisChild = createChildSession();
+
+			/**/
+			handleChildProcess(thisSession, thisChild);
+
+			/*free data*/
+			freeChildSession(thisChild);
+
+		}
+		else{
+			/*back to parent*/
+			/*Close  socket used by child*/
+			close(thisSession->socketFD);
+
+			int status;
+			/*Wait for all child process to end*/
+			waitpid(-1, &status, WNOHANG);
+		}
+
 	}
-
-
-	pid_t childPID;
-
-	/*Fork*/
-	childPID  = fork();
-
-	/*Check for error*/
-	if(childPID < 0){
-
-		error("Error: unable to fork new process.\n");
-
-	}
-
-	/*Inside child*/
-	if(childPID ==0){
-
-		struct childSession *thisChild = createChildSession();
-
-		handleChildProcess(thisSession, thisChild);
-
-		/*free data*/
-		freeChildSession(thisChild);
-
-	}
-
 
 
 }
@@ -407,11 +424,6 @@ void handleChildProcess(struct session *thisSession, struct childSession *thisCh
 
 	/*Send message*/
 	sendData(thisSession, thisChild->plainText);
-
-
-	/*Close connection*/
-	close(thisSession->socketFD);
-
 
 }
 
