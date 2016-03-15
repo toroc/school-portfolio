@@ -24,7 +24,7 @@
 #include <netdb.h>
 
 #define MAX_BUFFER 128000
-#define MAX_PACKET 1000
+#define MAX_PACKET 8000
 #define MAX_NAME 50
 
 typedef enum{INVALID=0, VALID}CTYPE;

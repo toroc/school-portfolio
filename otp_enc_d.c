@@ -25,8 +25,7 @@
 #include <signal.h>
 
 #define MAX_BUFFER 128000
-
-#define MAX_PACKET 1000
+#define MAX_PACKET 8000
 #define MAX_NAME 50
 
 /*Session data structure*/
@@ -398,7 +397,7 @@ void handleChildProcess(struct session *thisSession, struct childSession *thisCh
 {
 	/*Set up Data Connection*/
 
-	
+
 	/*Confirm Handshake*/
 	receiveHandShake(thisSession);
 
@@ -474,7 +473,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 {
 	/*Create buffers*/
 	char buffer[MAX_PACKET];
-	int msgLen;
+	long msgLen;
 
 	int bytesRead, result;
 
