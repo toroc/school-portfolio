@@ -2,18 +2,17 @@
 #   CS 344 - Winter 2016 - Program 4
 #   By: Carol Toro
 #   File Created: 03/09/2016
-#   Last Modified: 03/09/2016
+#   Last Modified: 03/14/2016
 #   Filename: otp_enc_d.c
 #	Usage: otp_enc_d <portNumber>
-#   Description:
-#
-#
-#
-#
-#
-#
-#
-#
+#    Description: This program executes the server side request
+#		from a client of a pad-like system to encrypt a file with a key. 
+#		The program receives the file text along with the key from the client.
+#		The program encrypts the file with the key and sends to the client
+#		the encrypted text.
+#	References: 
+#	Beej's Guide
+#		http://beej.us/guide/bgnet/output/html/multipage/syscalls.html#sendrecv
 ******************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,9 +32,8 @@
 /*Session data structure*/
 typedef struct session session;
 typedef struct childSession childSession;
-
+/*text data structur*/
 typedef struct textStruct textStruct;
-
 
 struct textStruct{
 	char *textBuffer;
@@ -58,42 +56,41 @@ struct session{
 
 };
 
+/*Signal, Error, and Debug functions*/
 void sigintHandle(int sigNum);
 void debugTrace(const char *msg, int line);
+void error(const char *msg);
 
 /*Data Structure Functions*/
 session* createSession();
 void freeSession(struct session *thisSession);
-
+childSession *createChildSession();
+void freeChildSession(struct childSession *thisChild);
 textStruct* createTextStruct();
 void freeTextStruct(struct textStruct *thisText);
 
-childSession *createChildSession();
-void freeChildSession(struct childSession *thisChild);
 
-void receiveHandShake(struct session *thisSession);
-int confirmACK(const char *msg);
+/*Validation Function*/
+void checkCommandLine(int argcount, char *args[]);
 
+/*Server Connections Functions*/
 void startServer(struct session *thisSession);
 void acceptConnection(struct session *thisSession);
 void handleConnections(struct session *thisSession);
+
+/*Process Functions*/
 void handleChildProcess(struct session *thisSession, struct childSession *thisChild);
 
+/*Server / Client Communication functions*/
+void receiveHandShake(struct session *thisSession);
 void getData(struct session *thisSession, struct textStruct *thisText);
 void sendData(struct session *thisSession, struct textStruct *thisText);
-
 void sendAck(struct session *thisSession);
 void sendNACK(struct session *thisSession);
+int confirmACK(const char *msg);
 
-void checkCommandLine(int argcount, char *args[]);
-
-void error(const char *msg);
-
-void sendCipher(struct session *thisSession);
-
-
+/*Encryption Function & Helper Functions*/
 void encode(struct childSession *thisChild);
-
 int charNum(char c);
 char numChar(int val);
 char encodeChar(char msgChar, char keyChar);
@@ -121,8 +118,6 @@ int main(int argc, char *argv[])
 		handleConnections(curSession);
 	}
 
-	/**/
-
 	return 0;
 
 
@@ -132,7 +127,7 @@ void sigintHandle(int sigNum)
 {
 	pid_t pid;
 	int status;
-
+	/*Catch exiting children*/
 	pid = waitpid(-1, &status, WNOHANG);
 }
 
@@ -169,7 +164,7 @@ session* createSession(){
 /******************************************************
 #   freeSession
 #   @desc: Deallocate the memory used up by user
-#   @param: pointer to session datat structure object
+#   @param: pointer to session data structure object
 #   @return: void
 ******************************************************/
 void freeSession(struct session *thisSession)
@@ -178,7 +173,13 @@ void freeSession(struct session *thisSession)
 
 }
 
-
+/******************************************************
+#   createTextStruct
+#   @desc: allocate memory for  data structure
+#       and return pointer to textStruct object
+#   @param: n/a
+#   @return: pointer to textStruct *thisTextStruct object
+******************************************************/
 textStruct* createTextStruct()
 {
 	/*Allocate memory for textStruct vars*/
@@ -188,11 +189,23 @@ textStruct* createTextStruct()
 	return thisText;
 
 }
+/******************************************************
+#   freeTextStruct
+#   @desc: Deallocate the memory used up by text
+#   @param: pointer to textStruc data structure object
+#   @return: void
+******************************************************/
 void freeTextStruct(struct textStruct *thisText)
 {
 	free(thisText);
 }
 
+/******************************************************
+#   createChildSession
+#   @desc: allocate memory for child session data structure
+#   @param: n/a
+#   @return: pointer to childSession data structure
+******************************************************/
 childSession *createChildSession()
 {
 	childSession * thisChild = (childSession *)malloc(sizeof(childSession));
@@ -203,6 +216,12 @@ childSession *createChildSession()
 	return thisChild;
 
 }
+/******************************************************
+#   freeChildSession
+#   @desc: Deallocate the memory used up childSession
+#   @param: pointer to childSession data structure object
+#   @return: void
+******************************************************/
 void freeChildSession(struct childSession *thisChild)
 {
 	freeTextStruct(thisChild->plainText);
@@ -233,7 +252,16 @@ void checkCommandLine(int argcount, char *args[])
 }
 
 
+/******************************************************
+#   Server & Connection Functions
+******************************************************/
 
+/******************************************************
+#   fnName
+#   @desc: 
+#   @param: pointer to session data structure object
+#   @return: void
+******************************************************/
 void startServer(struct session *thisSession)
 {
 
@@ -276,6 +304,12 @@ void startServer(struct session *thisSession)
 	}
 }
 
+/******************************************************
+#   fnName
+#   @desc: 
+#   @param: pointer to session data structure object
+#   @return: void
+******************************************************/
 void acceptConnection(struct session *thisSession)
 {
 	/*Vars to store client's info at connection and accept*/
@@ -301,7 +335,13 @@ void acceptConnection(struct session *thisSession)
 	thisSession->clientAddr = clientAddr;
 
 }
-
+/******************************************************
+#   handleConnections
+#   @desc: accept connection, and fork new process to
+#		handle data encryption.
+#   @param: pointer to session data structure object
+#   @return: void
+******************************************************/
 void handleConnections(struct session *thisSession)
 {
 	
@@ -333,7 +373,7 @@ void handleConnections(struct session *thisSession)
 	if(childPID ==0){
 
 		struct childSession *thisChild = createChildSession();
-
+		/**/
 		handleChildProcess(thisSession, thisChild);
 
 		/*free data*/
@@ -341,10 +381,17 @@ void handleConnections(struct session *thisSession)
 
 	}
 
-
-
 }
-
+/******************************************************
+#  Process Function
+******************************************************/
+/******************************************************
+#   handleChildProcess
+#   @desc: Execute flow for receiving data from client, 
+#		encoding data, and sending encoded data to client.#		
+#   @param: pointer to session data structure object
+#   @return: void
+******************************************************/
 void handleChildProcess(struct session *thisSession, struct childSession *thisChild)
 {
 	/*Confirm Handshake*/
@@ -362,12 +409,21 @@ void handleChildProcess(struct session *thisSession, struct childSession *thisCh
 	/*Send message*/
 	sendData(thisSession, thisChild->cipherText);
 
-
 	/*Close connection*/
 	close(thisSession->socketFD);
 
 
 }
+
+/******************************************************
+#   Server / Client Communication Functions
+******************************************************/
+/******************************************************
+#   sendAck
+#   @desc: send ACK to connected server
+#   @param: pointer to session data structure
+#   @return: n/a
+******************************************************/
 void sendAck(struct session *thisSession)
 {
 	int result;
@@ -381,7 +437,12 @@ void sendAck(struct session *thisSession)
 		error("Error: unable to send to socket\n");
 	}
 }
-
+/******************************************************
+#   sendNACK
+#   @desc: send NACK to connected server
+#   @param: pointer to session data structure
+#   @return: n/a
+******************************************************/
 void sendNACK(struct session *thisSession)
 {
 	int result;
@@ -397,7 +458,13 @@ void sendNACK(struct session *thisSession)
 	}
 }
 
-
+/******************************************************
+#   getData
+#   @desc: receive data from connected client and ensure
+#		the entire text was sent to server.
+#   @param: pointer to sesssion and textStruct data
+#   @return: n/a
+******************************************************/
 void getData(struct session *thisSession, struct textStruct *thisText)
 {
 	/*Create buffers*/
@@ -439,7 +506,13 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 
 }
 
-
+/******************************************************
+#   receiveHandShake
+#   @desc: receive initial handshake from client and confirm
+#		it is the correct client attempting to connect
+#   @param: pointer to session data structure
+#   @return: n/a
+******************************************************/
 void receiveHandShake(struct session *thisSession)
 {
 	char buff[MAX_NAME];
@@ -461,6 +534,7 @@ void receiveHandShake(struct session *thisSession)
 		sendAck(thisSession);
 	}
 	else{
+		/*Wrong client connection*/
 		sendNACK(thisSession);
 		/*Close socket*/
 		close(thisSession->socketFD);
@@ -471,73 +545,13 @@ void receiveHandShake(struct session *thisSession)
 
 	
 }
-
-
-int charNum(char c)
-{
-	if (c == 32)
-	{
-		return 26;
-	}
-	
-	return c - 65;	
-
-}
-
-char numChar(int val)
-{
-	int i;
-	char c;
-
-	if (val <26 && val>0)
-	{
-		i = val + 65;
-		c = i;
-		
-	}
-	else
-	{
-		/*Space character*/
-		i = 32;
-		c = i;	
-	}
-
-	return c;
-}
-
-
-
-
-char encodeChar(char msgChar, char keyChar)
-
-{
-	int msgVal = charNum(msgChar);
-	int keyVal = charNum(keyChar);
-
-	int charVal = (msgVal + keyVal) % 27;
-
-	char c = numChar(charVal);
-
-	return c;
-}
-
-void encode(struct childSession *thisChild)
-{
-
-	int plainLength = strlen(thisChild->plainText->textBuffer);
-	int i;
-
-	for (i = 0; i < plainLength; i++){
-
-		char ciphChar = encodeChar(thisChild->plainText->textBuffer[i], thisChild->keyText->textBuffer[i]);
-
-		/*Set cipher char*/
-		thisChild->cipherText->textBuffer[i] = ciphChar;
-	}
-
-	/*Done encoding*/
-}
-
+/******************************************************
+#   sendData
+#   @desc: send text to connected client and ensure
+#		the entire text was sent to client.
+#   @param: pointer to sesssion and textStruct data
+#   @return: n/a
+******************************************************/
 void sendData(struct session *thisSession, struct textStruct *thisText)
 {
 	int result;
@@ -549,7 +563,7 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 	/*Clear the bufffer*/
 	bzero(buffer, MAX_PACKET);
 
-	int val = thisText->charCount;
+	int val = sizeof(thisText->textBuffer);
 
 	/*Send number of bytes to expect*/
 	bytesSent = send(thisSession->socketFD, &val, sizeof(int),0);
@@ -578,7 +592,7 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 		/*Send MAX PACKET at a time*/
 		bytesSent+=send(thisSession->socketFD, thisText->textBuffer, MAX_PACKET, 0);
 
-	}while(bytesSent < thisText->charCount);
+	}while(bytesSent < val);
 
 	
 	/*Clear the bufffer*/
@@ -605,7 +619,12 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 	
 
 }
-
+/******************************************************
+#   confirmACK
+#   @desc: confirm buff has an ACK msg
+#   @param: const char *buff
+#   @return: 0: false, 1:true
+******************************************************/
 int confirmACK(const char *buff)
 {
 	char *success = "ACK";
@@ -615,4 +634,93 @@ int confirmACK(const char *buff)
 		return 1;
 	}
 	return 0;
+}
+
+/******************************************************
+#   Encryption & Helper Functions
+******************************************************/
+
+/******************************************************
+#   charNum
+#   @desc: calculate numerical val of ASCII char
+#   @param: char c
+#   @return: numerical value of ASCII char
+******************************************************/
+int charNum(char c)
+{
+	if (c == 32)
+	{
+		return 26;
+	}
+	
+	return c - 65;	
+
+}
+/******************************************************
+#   charNum
+#   @desc: calculate ASCII char corresponding to val 
+#   @param: int val
+#   @return: ASCII char 
+******************************************************/
+char numChar(int val)
+{
+	int i;
+	char c;
+
+	if (val <26 && val>0)
+	{
+		i = val + 65;
+		c = i;
+		
+	}
+	else
+	{
+		/*Space character*/
+		i = 32;
+		c = i;	
+	}
+
+	return c;
+}
+/******************************************************
+#   encodeChar
+#   @desc: encode msg char based on key char
+#   @param: msg char key char
+#   @return: encoded char
+******************************************************/
+char encodeChar(char msgChar, char keyChar)
+
+{
+	int msgVal = charNum(msgChar);
+	int keyVal = charNum(keyChar);
+
+	int charVal = (msgVal + keyVal) % 27;
+
+	char c = numChar(charVal);
+
+	return c;
+}
+
+/******************************************************
+#   encode
+#   @desc: encode plain text  and store as ciphertext
+#   @param: pointer to childSession data struc
+#   @return: encoded char
+******************************************************/
+void encode(struct childSession *thisChild)
+{
+
+	int plainLength = strlen(thisChild->plainText->textBuffer);
+	int i;
+
+	/*Loop through entire message*/
+	for (i = 0; i < plainLength; i++){
+
+		char ciphChar = encodeChar(thisChild->plainText->textBuffer[i], thisChild->keyText->textBuffer[i]);
+
+		/*Set cipher char*/
+		thisChild->cipherText->textBuffer[i] = ciphChar;
+	}
+
+	/*Done encoding*/
 }
