@@ -1,0 +1,86 @@
+<div class="container">
+   <div class="page-header">
+        <h1>User - Badges<br>
+            <small>What achievements has this user gotten lately?</small></h1>
+        </div>
+
+    <div class="content">
+        <p>While the Foursquare API can be used for searching places, connecting with users, knowing when a user has checked in on Foursquare, and even accessing every check-in around the world, this guide will focus primarily on searching venues and getting user data.</p>
+    </div>
+
+
+
+
+
+<h3>Getting a user's access token</h3>
+
+
+<pre class="prettyprint">
+<code class="prettyprint">
+https://foursquare.com/oauth2/authenticate
+    ?client_id=CLIENT_ID
+    &response_type=token
+    &redirect_uri=YOUR_REGISTERED_REDIRECT_URI
+</code>
+</pre>
+
+<h3>Getting a user's friends </h3>
+{{!-- Code --}}
+<pre class="prettyprint">
+<code class="prettyprint">
+    https://api.foursquare.com/v2/users/self?oauth_token=ACCESSTOEKEN&v=20160304
+</code>
+</pre
+
+
+<p>I would display my venue history, but since I've checked in at over 1100 venues and checked in over 1300 times, I'll just list some of the highlights: </p>
+
+
+
+<p>Making this call will return an array of venues</p>
+
+<h3>Javascript to make this call:</h3>
+
+
+
+<h3>Response from Foursquare:</h3>
+<pre class="prettyprint">
+<code class="prettyprint">
+{
+            "id":"525eeb3811d2c49bf03e23ec",
+            "name":"Toby's Estate Coffee",
+            "contact":{ },
+            "location":{ },
+            "categories":[ ],
+            "verified":true,
+            "stats":{ },
+            "url":"http:\/\/www.tobysestate.com",
+            "allowMenuUrlEdit":true,
+            "specials":{ },
+            "storeId":"",
+            "hereNow":{ },
+            "referralId":"v-1457052088",
+            "venueChains":[ ]
+         },
+         {
+            "id":"4aa52d50f964a520834720e3",
+            "name":"Stumptown Coffee Roasters",
+            "contact":{ },
+            "location":{ },
+            "categories":[ ],
+            "verified":true,
+            "stats":{ },
+            "url":"http:\/\/stumptowncoffee.com",
+            "allowMenuUrlEdit":true,
+            "specials":{ },
+            "venuePage":{ },
+            "hereNow":{ },
+            "referralId":"v-1457052088",
+            "venueChains":[ ]
+         },
+</code>
+</pre>
+
+<h3>Response breakdown:</h3>
+<p>We can get the following items from </p>
+</div>

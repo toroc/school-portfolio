@@ -1,0 +1,122 @@
+<div class="container">
+    <div class="jumbotron">
+        <h1>How-To: Foursquare API</h1>
+        <p>Let's get details about the venues visited by a user.</p>
+    </div>
+    <div class="content">
+        <p>In this section, we will not be using a foursquare node library function to make our GET request, instead we will make a direct get request and build our own URL.</p>
+      <code>https://api.foursquare.com/v2/users/USER_ID/venuehistory</code>
+        <div class="page-header">
+            <h1>User's History</h1>
+        </div>
+
+        <div class="content">
+            <p> Neither the Swarm app nor the Foursquare app, provide a way for a user to view an entire list of all of the venues they have visited. I'm guessing the applications limit this, as the data returned from the API is most likely extensive and could take a long time to download over a mobile application.</p>
+
+            <p>If we were to make a direct call to the API without using the Node module, we would need to have our request directed to the following URL:</p>
+            <pre class="prettyprint">
+<code class="prettyprint">https://api.foursquare.com/v2/users/USER_ID/venuehistory</code></pre>
+            
+              <p>Some of the parameters this request takes are the following: USER_ID, beforeTimestamp, afterTimestamp, and categoryId. For a complete list of parameters you can send with the request, please refer to the Foursquare documentation <a href="https://developer.foursquare.com/docs/users/venuehistorys">site</a>. For this call, I wont be using any parameters since I'm interested in the entire list of venues I have visted. Furthermore, while the API, does say USER_ID is a potential parameter, for the time being the API does not accept USER_ID and only provides a venue history when calling it with self. Let's build the beginning of the URL we are going to user to make our GET request. </p>
+
+            <pre class="prettyprint">
+<code class="prettyprint">var begURL = "https://api.foursquare.com/v2/users/self/venuehistory?'oauth_token=";</code></pre>
+    <p>Since I am targeting the API call to self instead of a user ID, it is still imperative that we append our access token to the URL and a version of the API we expect to call. In the code below, I do this on line 4. After building the URL, we make the request on line 7, and pass it a call back function <code>handleHistory</code>. Our call back function will save the response to our context object and render the body of the response on a history page I set up as a route. If we receive errors, I will simply print them to the console. After we make our request, we can expect to receive a JSON object.</p>
+
+<pre class="prettyprint linenums">
+app.get('/history', function(req, res, next){
+    var context = {};
+  /*Let's build the URL*/
+  var url = begURL+config.accessToken+"&v=20160308";
+
+    /*Make request with url and call back function*/
+    request(url, handleHistory);
+
+    function handleHistory(err, response, body){
+        if(!err && response.statusCode < 400){
+            context.results=body;
+            /*Render response on page*/
+            res.render('history', context);
+        }else{
+            /*Print to the console the error*/
+            console.log(err);
+            if(response){
+                console.log(response.statusCode);
+            }
+            next(err);
+        }     
+    }
+});
+</pre>
+    <p>Our response essentially returns an array of venues that we have checked into since we began using Foursquare. Some of the details you can encounter on the response are the following:
+        <ul>
+            <li>Count of times checked into a specific venue</li>
+            <li>Venue Information</li>
+            <ul>
+                <li>ID</li>
+                <li>Name</li>
+                <li>Contact</li>
+                <li>City</li>
+                <li>State</li>
+                <li>Country</li>
+                <li>Venue Category</li>
+            </ul>
+        </ul>
+
+    </p>
+    <p>If you’ve been an active user for a view years, the length of the JSON response may surprise you. My formatted JSON was over 44 thousand lines! Formatting the response will not do much in helping us make sense of data that we received. Instead, I suggest we convert the JSON response into a CSV file so that we can open it up in an Excel spreadsheet. I will use the Convert CSV <a href="http://www.convertcsv.com/json-to-csv.htm">website</a> to convert the response into a CSV file. You can either save the entire response as a .JSON file or copy and paste the response into the input box. If the response you received is anywhere near in length as the one I received, I recommend first saving it into a JSON.file and then uploading the file to the site.  </p>
+
+    <p>Now that you have all of the data in a CSV file, you can manipulate it with pivot tables to create different summary views of the data. Here are some interesting tidbits I found about my checkins: </p>
+
+
+    <ul>
+        <li>In the US, I have checked into 272 different cities, 14 different states, and 19 different airports.</li>
+        <li>I have checked into coffee shops a total of 64 times.</li>
+        <li>I have checked into supermarkets a total of 61 times.</li>
+       
+         </ul>
+         <p>And here's a break down of global check ins:</p>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Country</th>
+                        <th>Venues Visited</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Canada</td>
+                        <td>8</td>
+                    </tr>
+                    <tr>
+                        <td>Chile</td>
+                        <td>4</td>
+                    </tr>
+                    <tr>
+                        <td>Great Britain</td>
+                        <td>41</td>
+                    </tr>
+                    <tr>
+                        <td>Spain</td>
+                        <td>35</td>
+                    </tr>
+                    <tr>
+                        <td>USA</td>
+                        <td>2877</td>
+                    </tr>
+                </tbody>
+        
+            </table>
+            <p>Well that's it for this guide. Hope you were able to follow along and are able to gain some insights from the data you requested from the Foursquare API. </p>
+        
+   
+
+   
+
+
+
+
+</div>
+
+
+

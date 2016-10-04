@@ -1,0 +1,129 @@
+<div class="container">
+    <div class="jumbotron">
+        <h1>How-To: Foursquare API</h1>
+        <p>Let's get details about a user's tips on Foursquare.</p>
+    </div>
+    <div class="content">
+    	<p>In this section, we will be using the following foursquare node module library function to make our GET request to the API:</p>
+      <code>getTips(userId, params, accessToken, callback)</code>
+        <div class="page-header">
+            <h1>User's Tips</h1>
+        </div>
+
+        <div class="content">
+            <p>While I don’t often look up a user specifically to read through their tips, the Foursquare API can help us retrieve a list of tips from a Foursquare user. Since this a user authenticated type of call, we can only make the call with a USER ID as long as we have that’s user’s access token. Like the previous example, I’ll be using my own USER ID since I have granted my app access to my account. </p>
+
+            <p>If we were to make a direct call to the API without using the Node module, we would need to have our request directed to the following URL:</p>
+            <pre class="prettyprint">
+<code class="prettyprint">https://api.foursquare.com/v2/users/USER_ID/tips</code></pre>
+            
+              <p>Some of the parameters this request takes are the following: 
+              	<ul>
+              		<li>USER_ID</li>
+              		<li>Sort: recent, nearby, or popular</li>
+              		<li>latitude, longitude: only required if sort is by nearby</li>
+              		<li>limit: up to 500</li>
+              	</ul>
+              	 For a complete list of parameters you can send with the request, please refer to the Foursquare documentation <a href="https://developer.foursquare.com/docs/users/tips">site</a>. </p>
+
+              	 <p>Let's start by building our parameters, where I have decided my tips should be sorted by popularity: 
+<pre class="prettyprint">
+/*Build optional params*/
+  var params = {};
+  params.sort = "popular"
+              	 	</pre></p>
+
+
+    <p>I can call the API with my USER_ID, pass the params variable, pass it my access token, and a call back function. Our call back function will take care of the response we receive from the API and this time, instead of printing it to the console, I'll render it into a page. </p>
+
+<pre class="prettyprint">
+ 
+ Foursquare.Users.getTips("1065286", params,
+    config.accessToken, function(error, data){
+      
+    if(error){
+      res.send("An error was thrown: "+ error.message);
+    }
+    else{
+
+      context.results = JSON.stringify(data);
+      res.render('tips', context);
+    }
+  });
+</pre>
+    <p>Like we have done before, let's format the JSON response and jump into the various details we get from the response. The beginning of the response indicates the count of tips left by the user and each tip will be embedded into items: </p>
+
+<pre  class="prettyprint">
+{
+"tips":{
+  "count":98,
+  "items":[
+</pre>
+
+    <p> As expected, our response returned a list of tips, along with some  details about each tip. Some of the details you will find in the response include the following: </p>
+          <ul>
+            <li>Tip ID</li>
+            <li>Tip Text</li>
+            <li>Likes:</li>
+            <ul>
+            	<li>Count</li>
+            	<li>Groups: the people who have liked the tips</li>
+            </ul>
+            <li>Venue info:</li>
+            <ul>
+            	<li>ID</li>
+            	<li>Name</li>
+            	<li>Phone</li>
+            </ul>
+            <li>Location info:</li>
+            <ul>
+            	<li>Address</li>
+            	<li>City</li>
+            	<li>State</li>
+            	<li>Country</li>
+            </ul>
+            <li>Much much more!</li>
+          </ul>
+
+          <p>Here are some of the tips, I have added to Foursquare:</p>
+
+<pre class="prettyprint">
+"id":"4d6acd12d2596ea80d756a20",
+    "createdAt":1298844946,
+    "text":"Do not try to park your SUV in the garages...the garages are tiny and youll end up having to pay for repairs for your car.",
+    "type":"user",
+    "canonicalUrl":"https://foursquare.com/item/4d6acd12d2596ea80d756a20",
+            
+"id":"4d8a4e2126a36ea84a15f2ad",
+    "createdAt":1300909601,
+    "text":"The pharmacy is great. Prescriptions are usually ready in 20 minutes.",
+    "type":"user",
+    "canonicalUrl":"https://foursquare.com/item/4d8a4e2126a36ea84a15f2ad",
+
+"id":"4bec998170c603bb7f639bb4",
+    "createdAt":1273796993,
+    "text":"Bring cash! They don't accept cards.",
+    "type":"user",
+    "canonicalUrl":"https://foursquare.com/item/4bec998170c603bb7f639bb4",
+
+"id":"4e0512b3483b98d417015947",
+    "createdAt":1308955315,
+    "text":"The massage chair is amazinggggg",
+    "type":"user",
+    "canonicalUrl":"https://foursquare.com/item/4e0512b3483b98d417015947",
+
+"id":"4bd80f5d70c603bb0a8399b4",
+    "createdAt":1272450909,
+    "text":"Go to the 4th floor if you need peace and quiet.",
+    "type":"user",
+    "canonicalUrl":"https://foursquare.com/item/4bd80f5d70c603bb0a8399b4",
+</pre>
+          <p></p>
+
+
+
+
+</div>
+
+
+

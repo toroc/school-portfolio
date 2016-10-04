@@ -1,0 +1,13 @@
+.content {
+	font-size: 18px;
+	line-height: 1.5;
+}
+
+.center{
+	text-align: center;
+}
+
+pre{
+	overflow-y:scroll;
+	max-height: 450px;
+}

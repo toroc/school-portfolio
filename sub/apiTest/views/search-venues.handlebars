@@ -1,0 +1,42 @@
+	<form method="GET" action="/search-results">
+		<fieldset>
+			<legend>Explore by Section</legend>
+			<label for="city">City</label>
+			<input type="text" name="city" id="locationName">
+			<label for="state">State</label>
+			<input type="text" name="state" id="stateName">
+			<label for="query">query:</label>
+			<input type="text" name="query" id="query">
+			<input type="submit" id="submit">
+		</fieldset>
+	</form>
+
+	{{#if dataList}}
+	<script src="/js/explore.js"></script>
+	<table id="formdata">
+		<thead>
+			<tr>
+				<th>Name</th>
+				<th>Value</th>
+			</tr>
+		</thead>
+		<tbody>
+			{{#each dataList}}
+			<tr>
+				
+				<td>{{this.name}}
+					<td>{{this.value}}
+						
+					</tr>{{/each}}
+				</tbody>
+			</table>
+			{{/if}}
+
+			{{#if results}}
+			<h1>Response from Foursquare :</h1>
+			<pre class="prettyprint">
+				<code class="prettyprint">
+					{{results}}
+				</code>
+			</pre>
+			{{/if}}

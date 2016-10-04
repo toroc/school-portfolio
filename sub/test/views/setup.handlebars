@@ -1,0 +1,61 @@
+<div class="container">
+	<div class="jumbotron">
+		<h1>How-To: Foursquare API</h1>
+		<p>Let's setup for success. </p>
+	</div>
+	<div class="content">
+		<p>Before we can start making calls to the API to get data, we will need to setup our system and understand how to make the calls and what happensa after we make the calls. This section will help you setup your system.</p>
+		<div class="page-header">
+			<h1>Setup API Access</h1>
+		</div>
+
+		<div class="content">
+			<p>In order to gain access to the Foursquare API, you will need to have a Foursquare account, if you don’t have one, you can easily create a free account at <a href="http://foursquare.com">Foursquare.com</a>. After you login to your account, you will need to create an application on the Foursquare For Developers' <a href="https://foursquare.com/developers/apps">site</a>. The application </p>
+
+			{{!-- Image --}}
+			<p class="center"><img src="img/foursquare-app.png" class="img-fluid" alt="Responsive image"></p>
+
+			<p>After you’ve created the application, Foursquare will provide you with the following credentials: Client ID and Client Secret. These credentials will allow you to make requests from the API.</p>
+
+			{{!-- Credentials image --}}
+			<p class="center"><img src="img/app-creds.png" class="img-fluid" alt="Responsive image"></p>
+
+			<p>I recommend you store the credentials in a file named <code>config.js</code>, as you will be needing them each time you make a call to the API. This is what the inside of your file should look like:</p>
+			<pre class="prettyprint">
+module.exports = {
+	'secrets' : {
+	'clientId' : 'YOUR_CLIENT_ID',
+	'clientSecret' : 'YOUR_CLIENT_SECRET',
+	'redirectUrl' : 'YOUR_REDIRECT_URL',
+	'accessToken' : 'YOUR_ACCESS_TOKEN'
+	}
+};
+			 </pre>
+
+
+			<p>A call to the API will look like this: </p>
+
+			<pre class="prettyprint">
+<code class="prettyprint">https://api.foursquare.com/v2/venues/search?ll=40.7,-74&client_id=CLIENT_ID&client_secret=CLIENT_SECRET&v=YYYYMMDD</code></pre>
+			<p>Every time you make a call, you will need to replace CLIENT_ID with your client id key, and replace CLIENT_SECRET with your client secret key. </p>
+
+			
+
+		</div>
+		<div class="page-header">
+			<h1>Setup Foursquare Node Module</h1>
+		</div>
+		<div class="content">
+			<p>Next we are going to install a node module that will make it easier for us to call the API using Node and Express. In order to install the Foursquare module, you will want to run the following command <code>npm install node-foursquare</code>. You will be able to find more information about the module on <a href="https://github.com/clintandrewhall/node-foursquare">GitHub</a>.</p>
+		
+			<p>While the GitHub readme has examples on how to use the module and store the API keys, as I mentioned before, I recommend you store the keys in a separate file instead of creating a variable config which stores the keys on the JavaScript page. This will ensure that your keys are kept safe should you decide to share your code. You can use the following code sample, where the file <code>config.js</code> stores the keys.</p>
+
+			<pre class="prettyprint linenums">
+var config = require('./config.js');
+var foursquare = require('node-foursquare')(config);
+			</pre>
+
+			<p>Now that we have set up the API access and the Node module, we are almost ready to start making calls. Next, we need to understand a bit more about the node module we are using and slight differences in API calls.</p>
+		</div>
+
+	

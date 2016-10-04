@@ -1,0 +1,59 @@
+<div class="container">
+    <div class="jumbotron">
+        <h1>How-To: Foursquare API</h1>
+        <p>Let's get details about a user's friends and perhaps feel a bit stalkerish.</p>
+    </div>
+    <div class="content">
+      <p>In this section, we will be using the following foursquare node module library function to make our GET request to the API:</p>
+      <code>getFriends(userId, params, accessToken, callback)</code>
+        <div class="page-header">
+            <h1>User's Friends</h1>
+        </div>
+
+        <div class="content">
+            <p>Within the Swarm Foursquare app, I can navigate to the friends display, which shows a list of all of my friends in alphabetical order along with their profile photo. We can get a similar list by making a request to the Foursquare API. Since this a user authenticated type of call, we can only make the call with a USER ID as long as we have that’s user’s access token. Since we have authenticated ourselves, we can use our own user ID to pass to the call.</p>
+
+            <p>If we were to make a direct call to the API without using the Node module, we would need to have our request directed to the following URL:</p>
+            <pre class="prettyprint">
+<code class="prettyprint">https://api.foursquare.com/v2/users/USER_ID/friends</code></pre>
+            
+              <p>Some of the parameters this request takes are the following: USER_ID, and limit. For a complete list of parameters you can send with the request, please refer to the Foursquare documentation <a href="https://developer.foursquare.com/docs/users/friends">site</a>. For this call, I wont be using any parameters. But we will need to call the function with a userID</p>
+
+    <p>I can call the API with my USER_ID, pass null, since I wont be adding a limit parameter, pass it my access token, and a call back function. Our call back function will take care of the response we receive from the API and this time, instead of printing it to the console, I'll render it into a page. </p>
+
+<pre class="prettyprint">
+  
+  Foursquare.Users.getFriends("USER_ID", null,
+    config.accessToken, function(error, data){
+      
+    if(error){
+      res.send("An error was thrown: "+ error.message);
+    }
+    else{
+      var context={};
+      context.results = JSON.stringify(data);
+      res.render('friends', context);
+    }
+  });
+</pre>
+
+    <p>Like we have done before, let's format the JSON response. </p>
+
+    <p>Due to confidentiality, I won't be posting the list of my friends, as the list does return identifiable information. Our response returns a list of friends, along with some  details about each friend. Some of the details you will find in the response include the following: </p>
+          <ul>
+            <li>Friends' first name</li>
+            <li>Friends' last name</li>
+            <li>Friends' gender</li>
+            <li>Friends' home city</li>
+            <li>Friends' bio</li>
+            <li>Friends'count of tips</li>
+          </ul>
+          <p>One of my friends has left 117 tips! Of my 41 friends, I have 7 friends from Florida, 6 from Washington, and 5 from New York. </p>
+
+
+
+
+</div>
+
+
+
