@@ -5,13 +5,15 @@
 /*Import Node module request*/
 var request=require('request');
 
+var path = require('path');
+
+
 /*Import express node module*/
 var express = require('express');
 var app = express();
 
-
 /*Import and setup handlebars*/
-var handlebars = require('express-handlebars').create({defaultLayout:'main'});
+var handlebars = require('express-handlebars').create({layoutsDir: path.join(__dirname, '/app/views/layouts'), defaultLayout:'main'});
 
 /*Import body-parser for handling POST*/
 var bodyParser = require('body-parser');
@@ -20,26 +22,22 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 /*Setup default rendering engine and extension*/
 app.engine('handlebars', handlebars.engine);
+app.set('views', __dirname + '/app/views');
 app.set('view engine', 'handlebars');
 
-/*Set up port*/
-app.set('port', 3001);
 
-
-/*Set up static files*/
-app.use(express.static('public'));
 /******************************************************
 #   Routes
 ******************************************************/
 
 /*Render the default routes*/
 app.get('/', function(req, res, next){
-	res.render('index');
+  res.render('index');
 });
 
 
 app.get('/setup', function(req, res, next){
-	res.render('setup');
+  res.render('setup');
 });
 
 app.get('/background', function(req, res, next){
@@ -65,6 +63,12 @@ app.get('/venues-explore', function(req, res, next){
   res.render('venues-explore');
 });
 
+/*Set up port*/
+app.set('port', 3001);
+
+
+/*Set up static files*/
+app.use(express.static(path.join(__dirname, '/app/public')));
 
 
 
