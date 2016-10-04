@@ -1,7 +1,7 @@
 #How-To: Foursquare API
 
 ##About
-A how to guide for the Foursquare API.
+A Node App featuring a how to guide for the Foursquare API.
 
 ##Installation
 Clone the directory and run `npm install` to get dependencies.
