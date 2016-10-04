@@ -1,9 +1,7 @@
 #How-To: Foursquare API
 
 ##About
-This is a simple shell program written in C for an Operating Systems course. 
-
-The shell runs command line instructions, returns results, and supports three builtin commands: cd, exit, and status. It also supports comments and blank lines, redirection of standard input/output, and foreground/background processes.
+A how to guide for the Foursquare API.
 
 ##Installation
 Clone the directory and run `npm install` to get dependencies.
