@@ -1,35 +1,44 @@
-CS 372 - Winter 2016 - Program 2
-By: Carol Toro
-Program Description: File Transfer Server & File Transfer Client
+#Simple Shell
 
----------------------------------------------------------------------------
-README.txt
----------------------------------------------------------------------------
+##About
+This is a simple file transfer system.
 
-COMPILE Instructions:
-     Navigate to the directory containing the files and use the make command:
-          make
-     This will produce the executable for the File Transfer Server program: ftserver
-     
-     
-EXECUTE Instructions:
-     
-    Host A ("flip3" server) enter:
-        ftserver <Port Number>
-          
-    Host B ("flip2" server) enter:
-        python ftclient.py <Host A> <Host A's Port Number> <Commands> <Host B's Data Port>
-          **Prior to executing the ftclient, Host A must be listening for connections.
+The client side of the system is written in Python. It supports  the request of UNIX file or a list of available files.
 
-     EXECUTE:
-        HOST A (flip3):
-            make
-            ftserver 61555
-        HOST B (flip2):
-            python ftclient.py flip3 61555 -l 42555
-            python ftclient.py flip3 61555 -g <filename> 42555
+The server side of the system is written in C++. It supports sending unix files to the client side of the system. When a transfer completes, the server side listens for new incoming connections.
 
-CONTROL Instructions:
+
+
+##Configuration
+
+###How to build
+The build process is controlled by the `makefile` and accepts the following commands:
+```
+make
+make clean
+```
+To build the server side of the system run make at the command line in the current directory.
+
+This will generate an executabled called `ftserver`.
+
+###How to run
+
+To turn on the server side part of the system on Host A, type
+```
+ftserver <Command Port #>
+```
+
+To turn on the client side of the system on Host B and request the list of available files from Host A, type
+```
+python src/ftclient.py <Host Name> <Command Port #> -l <Data Port #>
+```
+
+To turn on the client side of the system on Host B and request a specific file from Host A, type
+```
+python src/ftclient.py <Host Name> <Command Pord #> -f <File Name> <Data Port #>
+```
+
+###Control Instructions
     HOST A (ftserver):
         ftserver waits for an incoming connection.
     HOST B (ftclient):
@@ -37,15 +46,16 @@ CONTROL Instructions:
     HOST A (ftserver):
         ftserver receives request and responds to ftclient.
     Host B (ftclient):
-     	ftclient receives responde from ftserver and closes connection.
+        ftclient receives responde from ftserver and closes connection.
 
 
-    
-     *** After the connection has been closed:
+    *** After the connection has been closed:
      HOST A (ftserver):
           Continues to wait for a new connection from the ftclient until
           either a connection is accepted or a SIGINT is received. (Ctrl-C)
 
+
+##Sample Runs
 
 flip2 ~/GitHub/Networking/ft 25% ftserver 61555
 ---------------------------------------------------------------------------
@@ -153,6 +163,16 @@ ftclient > control connection established with server flip2 on port 61555
 ftclient > sending request to server.
 
 ftclient > received following message from ftserver: 
-	FILE NOT FOUND
+    FILE NOT FOUND
 
 
+
+
+##License
+All rights reserved.
+
+
+
+
+     
+     
