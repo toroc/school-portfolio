@@ -1,7 +1,7 @@
-#Simple Shell
+#File Transfer System
 
 ##About
-This is a simple file transfer system.
+This is a simple one-way file transfer system written for a Networking Course.
 
 The client side of the system is written in Python. It supports  the request of UNIX file or a list of available files.
 
@@ -57,115 +57,103 @@ python src/ftclient.py <Host Name> <Command Pord #> -f <File Name> <Data Port #>
 
 ##Sample Runs
 
+####EXAMPLE TEST RUN #1 Directory Request: HOST A (ftserver) Console
+```
 flip2 ~/GitHub/Networking/ft 25% ftserver 61555
----------------------------------------------------------------------------
-EXAMPLE TEST RUN #1 Directory Request: HOST A (ftserver) Console
----------------------------------------------------------------------------
 
-ftserver > now listening for incoming connections on port #61555.
+    ftserver > now listening for incoming connections on port #61555.
 
-ftserver > received connection from flip3.engr.oregonstate.edu
+    ftserver > received connection from flip3.engr.oregonstate.edu
 
-ftserver > List directory requested on port 42555
+    ftserver > List directory requested on port 42555
 
-ftserver > sending directory contents on port 42555
+    ftserver > sending directory contents on port 42555
 
-ftserver > now listening for incoming connections on port #61555.
+    ftserver > now listening for incoming connections on port #61555.
+```
 
-
-
+####EXAMPLE TEST RUN #1 Directory Request: HOST B (ftclient) Console
+```
 flip3 ~/GitHub/Networking/ft 25% python ftclient.py flip2 61555 -l 42555
----------------------------------------------------------------------------
-EXAMPLE TEST RUN #1 Directory Request: HOST B (ftclient) Console
----------------------------------------------------------------------------
 
-ftclient > control connection established with server flip2 on port 61555
+    ftclient > control connection established with server flip2 on port 61555
 
-ftclient > sending request to server.
+    ftclient > sending request to server.
 
-ftclient > receiving directory structure from flip2 on port 42555.
+    ftclient > receiving directory structure from flip2 on port 42555.
 
-.
-..
-ftclient.py
-ftserver
-makefile
-ftserver.o
-ftserver.cpp
+    .
+    ..
+    ftclient.py
+    ftserver
+    makefile
+    ftserver.o
+    ftserver.cpp
 
-ftclient > transfer is complete.
+    ftclient > transfer is complete.
+```
 
 
+####EXAMPLE TEST RUN #2 File Request: HOST A (ftserver) Console
+```
 flip2 ~/GitHub/Networking/ft 56% ftserver 61555
----------------------------------------------------------------------------
-EXAMPLE TEST RUN #2 File Request: HOST A (ftserver) Console
----------------------------------------------------------------------------
 
-ftserver > now listening for incoming connections on port #61555.
+    ftserver > now listening for incoming connections on port #61555.
 
-ftserver > received connection from flip3.engr.oregonstate.edu
+    ftserver > received connection from flip3.engr.oregonstate.edu
 
-ftserver > file ftserver.cpp requested on port 4255
+    ftserver > file ftserver.cpp requested on port 4255
 
-ftserver > sending ftserver.cpp on port 4255
+    ftserver > sending ftserver.cpp on port 4255
 
-ftserver > done sending ftserver.cpp
+    ftserver > done sending ftserver.cpp
 
-ftserver > now listening for incoming connections on port #61555.
+    ftserver > now listening for incoming connections on port #61555.
+```
 
-
-
+####EXAMPLE TEST RUN #2 File Request: HOST B (ftclient) Console
+```
 flip3 ~/GitHub/Networking/ft 38% python ftclient.py flip2 61555 -g ftserver.cpp 4255 
----------------------------------------------------------------------------
-EXAMPLE TEST RUN #2 File Request: HOST B (ftclient) Console
----------------------------------------------------------------------------
 
-ftclient > control connection established with server flip2 on port 61555
+    ftclient > control connection established with server flip2 on port 61555
 
-ftclient > sending request to server.
+    ftclient > sending request to server.
 
-ftclient > receiving ftserver.cpp from flip2 on port 4255.
+    ftclient > receiving ftserver.cpp from flip2 on port 4255.
 
-ftclient > duplicate file name for file: ftserver.cpp
+    ftclient > duplicate file name for file: ftserver.cpp
 
-ftclient > duplicate file name for file: 1_ftserver.cpp
+    ftclient > duplicate file name for file: 1_ftserver.cpp
 
-ftclient > transfer is complete.
+    ftclient > transfer is complete.
+```
 
-
-
-
+####EXAMPLE TEST RUN #3 File Request: HOST A (ftserver) Console
+```
 flip2 ~/GitHub/Networking/ft 58% ftserver 61555
----------------------------------------------------------------------------
-EXAMPLE TEST RUN #3 File Request: HOST A (ftserver) Console
----------------------------------------------------------------------------
 
-ftserver > now listening for incoming connections on port #61555.
+    ftserver > now listening for incoming connections on port #61555.
 
-ftserver > received connection from flip3.engr.oregonstate.edu
+    ftserver > received connection from flip3.engr.oregonstate.edu
 
-ftserver > file randFile requested on port 4255
+    ftserver > file randFile requested on port 4255
 
-ftserver > file requested by client not found.
+    ftserver > file requested by client not found.
 
-ftserver > now listening for incoming connections on port #61555.
+    ftserver > now listening for incoming connections on port #61555.
 
-
-
-
+```
+####EXAMPLE TEST RUN #3 File Request: HOST B (ftclient) Console
+```
 flip3 ~/GitHub/Networking/ft 40% python ftclient.py flip2 61555 -g randFile 4255
----------------------------------------------------------------------------
-EXAMPLE TEST RUN #3 File Request: HOST B (ftclient) Console
----------------------------------------------------------------------------
 
-ftclient > control connection established with server flip2 on port 61555
+    ftclient > control connection established with server flip2 on port 61555
 
-ftclient > sending request to server.
+    ftclient > sending request to server.
 
-ftclient > received following message from ftserver: 
-    FILE NOT FOUND
-
-
+    ftclient > received following message from ftserver: 
+        FILE NOT FOUND
+```
 
 
 ##License
