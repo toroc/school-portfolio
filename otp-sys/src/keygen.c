@@ -11,17 +11,7 @@
 #
 ******************************************************/
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#define OP_NUM 27
-
-
-void checkCommandLine(int argcount, char *args[]);
-void generateKey(int keyLen);
+#include "../include/keygen.h"
 int main(int argc, char*argv[])
 {
 

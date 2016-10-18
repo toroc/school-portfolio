@@ -1,147 +1,5 @@
-/******************************************************
-#   CS 344 - Winter 2016 - Program 4
-#   By: Carol Toro
-#   File Created: 03/09/2016
-#   Last Modified: 03/14/2016
-#   Filename: otp_dec_d.c
-#	Usage: otp_dec_d <portNumber>
-#    Description: This program executes the server side request
-#		from a client of a pad-like system to decrypt a file with a key. 
-#		The program receives the encrypted text along with the key from the client.
-#		The program decrypts the file with the key and sends to the client
-#		the decrypted text.
-#	References: 
-#	Beej's Guide
-#		http://beej.us/guide/bgnet/output/html/multipage/syscalls.html#sendrecv
-******************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <signal.h>
+#include "../include/server_side.h"
 
-#define MAX_BUFFER 128000
-
-#define MAX_PACKET 1000
-#define MAX_NAME 50
-
-/*Session data structure*/
-typedef struct session session;
-typedef struct childSession childSession;
-
-typedef struct textStruct textStruct;
-
-
-struct textStruct{
-	char *textBuffer;
-	int charCount;
-};
-
-struct childSession{
-	struct textStruct *cipherText;
-	struct textStruct *keyText;
-	struct textStruct *plainText;
-};
-
-struct session{
-	int serverSocket; /*Server socket for listening*/
-	int serverPort; /*int to store server port*/
-	int socketFD; /*client socket for connection*/
-	struct sockaddr_in serverAddr;
-	struct sockaddr_in clientAddr;
-	char *clientName;
-
-};
-/*Signal, Error, and Debug functions*/
-void sigintHandle(int sigNum);
-void debugTrace(const char *msg, int line);
-void error(const char *msg);
-
-/*Data Structure Functions*/
-session* createSession();
-void freeSession(struct session *thisSession);
-textStruct* createTextStruct();
-void freeTextStruct(struct textStruct *thisText);
-childSession *createChildSession();
-void freeChildSession(struct childSession *thisChild);
-
-/*Validation Function*/
-void checkCommandLine(int argcount, char *args[]);
-
-
-/*Server Connections Functions*/
-void startServer(struct session *thisSession);
-void acceptConnection(struct session *thisSession);
-void handleConnections(struct session *thisSession);
-
-/*Process Function*/
-void handleChildProcess(struct session *thisSession, struct childSession *thisChild);
-
-/*Server / Client Communication functions*/
-void receiveHandShake(struct session *thisSession);
-void getData(struct session *thisSession, struct textStruct *thisText);
-void sendData(struct session *thisSession, struct textStruct *thisText);
-void sendAck(struct session *thisSession);
-void sendNACK(struct session *thisSession);
-int confirmACK(const char *msg);
-
-/*Decryption Function & Helper Functions*/
-void decode(struct childSession *thisChild);
-int charNum(char c);
-char numChar(int val);
-char decodeChar(char msgChar, char keyChar);
-
-int main(int argc, char *argv[])
-{
-	/*Set handler for children*/
-	signal(SIGCHLD, sigintHandle);
-
-	/*Check command line arguments are correct*/
-	checkCommandLine(argc, argv);
-
-	struct session *curSession = createSession();
-
-	/*Store port #*/
-	curSession->serverPort=atoi(argv[1]);
-
-	/*Setup server and listen for connections*/
-	startServer(curSession);
-
-	/**/
-	while(1)
-	{
-		/*Handle connections*/
-		handleConnections(curSession);
-	}
-
-	return 0;
-
-
-}
-
-void debugTrace(const char *msg, int line){
-	//printf("OTP_DEC_D > %s from line # %d \n", msg, line);
-
-	fflush(stdout);
-}
-
-void error(const char *msg)
-{
-    perror(msg);
-    exit(0);
-}
-
-void sigintHandle(int sigNum)
-{
-	pid_t pid;
-	int status;
-
-	pid = waitpid(-1, &status, WNOHANG);
-}
 /******************************************************
 #   Data Structure Functions
 ******************************************************/
@@ -231,21 +89,6 @@ void freeChildSession(struct childSession *thisChild)
 	free(thisChild);
 }
 
-/******************************************************
-#   checkCommandLine
-#   @desc: ensure program is executed with correct
-#       command else, program ends
-#   @param: int of count of command line arguments used
-#		array of strings with values of arguments
-#   @return: n/a
-******************************************************/
-void checkCommandLine(int argcount, char *args[])
-{
-	if(argcount != 2){
-		printf("Usage: %s <portNumber>\n",args[0]);
-		exit(1);
-	}
-}
 
 /******************************************************
 #   Server & Connection Functions
@@ -397,7 +240,6 @@ void handleConnections(struct session *thisSession)
 
 
 }
-
 /******************************************************
 #  Process Function
 ******************************************************/
@@ -419,8 +261,15 @@ void handleChildProcess(struct session *thisSession, struct childSession *thisCh
 	/*Get key data*/
 	getData(thisSession, thisChild->keyText);
 
-	/*decode message*/
-	decode(thisChild);
+	if (thisSession->connType == DECODE){
+		/*decode message*/
+		decode(thisChild);
+	}
+	else{
+		/*encode message*/
+		encode(thisChild);
+	}
+	
 
 	/*Send message*/
 	sendData(thisSession, thisChild->plainText);
@@ -649,80 +498,33 @@ int confirmACK(const char *buff)
 	return 0;
 }
 
-/******************************************************
-#   Encryption & Helper Functions
-******************************************************/
 
-/******************************************************
-#   charNum
-#   @desc: calculate numerical val of ASCII char
-#   @param: char c
-#   @return: numerical value of ASCII char
-******************************************************/
-int charNum(char c)
-{
-	if (c == 32)
-	{
-		return 26;
-	}
-	
-	return c - 65;	
-
-}
-/******************************************************
-#   charNum
-#   @desc: calculate ASCII char corresponding to val 
-#   @param: int val
-#   @return: ASCII char 
-******************************************************/
-char numChar(int val)
-{
-	int i;
-	char c;
-
-	if (val <26)
-	{
-		i = val + 65;
-		c = i;
-		
-	}
-	else
-	{
-		/*Space character*/
-		i = 32;
-		c = i;	
-	}
-
-	return c;
-}
-
-/******************************************************
-#   decodeChar
-#   @desc: decode msg char based on key char
-#   @param: msg char key char
-#   @return: encoded char
-******************************************************/
-char decodeChar(char msgChar, char keyChar)
-
-{
-	int msgVal = charNum(msgChar);
-	int keyVal = charNum(keyChar);
-
-	int charVal = (msgVal - keyVal) % 27;
-
-	/*Check if charVal is negative*/
-	if (charVal < 0){
-		charVal += 27;
-	}
-
-	/*Get numerical ASCII value of charVal*/
-	char c = numChar(charVal);
-
-	return c;
-}
 /******************************************************
 #   encode
-#   @desc: encode cipher text  and store as plain text
+#   @desc: encode plain text  and store as ciphertext
+#   @param: pointer to childSession data struc
+#   @return: encoded char
+******************************************************/
+void encode(struct childSession *thisChild)
+{
+
+	int plainLength = strlen(thisChild->plainText->textBuffer);
+	int i;
+
+	/*Loop through entire message*/
+	for (i = 0; i < plainLength; i++){
+
+		char ciphChar = encodeChar(thisChild->plainText->textBuffer[i], thisChild->keyText->textBuffer[i]);
+
+		/*Set cipher char*/
+		thisChild->cipherText->textBuffer[i] = ciphChar;
+	}
+
+	/*Done encoding*/
+}
+/******************************************************
+#   decode
+#   @desc: decode cipher text  and store as plain text
 #   @param: pointer to childSession data struc
 #   @return: encoded char
 ******************************************************/
@@ -742,6 +544,3 @@ void decode(struct childSession *thisChild)
 
 	/*Done encoding*/
 }
-
-
-
