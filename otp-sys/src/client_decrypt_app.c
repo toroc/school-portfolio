@@ -15,8 +15,8 @@
 #		http://beej.us/guide/bgnet/output/html/multipage/syscalls.html#sendrecv
 ******************************************************/
 
-#include "../include/client_side.h"
-#include "../include/helpers.h"
+#include "../inc/client_side.h"
+#include "../inc/helpers.h"
 
 /*Validation Functions*/
 void checkCommandLine(int argcount, char *args[]);

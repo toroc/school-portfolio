@@ -8,6 +8,8 @@
 #
 #
 ******************************************************/
+#ifndef HELPERS_H
+#define HELPERS_H
 
 
 #include <stdio.h>
@@ -15,9 +17,12 @@
 #include <string.h>
 #include <signal.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 
 /*Signal, Error, and Debug functions*/
 void sigintHandle(int sigNum);
 void debugTrace(const char *msg, int line);
 void error(const char *msg);
+#endif

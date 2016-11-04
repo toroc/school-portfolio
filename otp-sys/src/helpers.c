@@ -8,7 +8,7 @@
 #
 #
 ******************************************************/
-
+#include "../inc/helpers.h"
 
 void sigintHandle(int sigNum)
 {

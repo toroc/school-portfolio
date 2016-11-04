@@ -8,9 +8,14 @@
 #
 #
 ******************************************************/
+#ifndef ENCRYPTION_DECRYPTION_H
+#define ENCRYPTION_DECRYPTION_H
 
+#include <stdio.h>
+#include <stdlib.h>
 /*Encryption Function & Helper Functions*/
 int charNum(char c);
 char numChar(int val);
 char encodeChar(char msgChar, char keyChar);
 char decodeChar(char msgChar, char keyChar);
+#endif

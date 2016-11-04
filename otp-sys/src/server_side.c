@@ -1,4 +1,4 @@
-#include "../include/server_side.h"
+#include "../inc/server_side.h"
 
 /******************************************************
 #   Data Structure Functions
@@ -261,7 +261,7 @@ void handleChildProcess(struct session *thisSession, struct childSession *thisCh
 	/*Get key data*/
 	getData(thisSession, thisChild->keyText);
 
-	if (thisSession->connType == DECODE){
+	if (thisSession->connType == DEC){
 		/*decode message*/
 		decode(thisChild);
 	}
@@ -380,7 +380,7 @@ void receiveHandShake(struct session *thisSession)
 	/*Clear buff*/
 	bzero(buff, MAX_NAME);
 
-	char *success = "DEC";
+	char *success = "decode";
 	int len = strlen(success);
 
 	int bytesRead = recv(thisSession->socketFD, buff, sizeof(buff), 0);

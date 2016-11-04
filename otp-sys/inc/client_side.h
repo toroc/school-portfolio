@@ -9,6 +9,9 @@
 #	Beej's Guide
 #		http://beej.us/guide/bgnet/output/html/multipage/syscalls.html#sendrecv
 ******************************************************/
+#ifndef CLIENT_SIDE_H
+#define CLIENT_SIDE_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,12 +20,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include "../include/encryption_decryption.h"
-#include "../include/helpers.h"
+#include "../inc/encryption_decryption.h"
+#include "../inc/helpers.h"
 
 #define MAX_BUFFER 128000
 #define MAX_PACKET 8000
 #define MAX_NAME 50
+
 // Request type: encode or decode
 typedef enum{ENC=0, DEC}RTYPE;
 typedef enum{INVALID=0, VALID}CTYPE;
@@ -71,3 +75,5 @@ int confirmACK(const char *msg);
 void validateFiles(struct session *thisSession);
 void fileCharValidation(struct textStruct *thisText);
 int validChar(char curChar);
+
+#endif

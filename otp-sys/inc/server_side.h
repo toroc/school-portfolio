@@ -9,6 +9,9 @@
 #	Beej's Guide
 #		http://beej.us/guide/bgnet/output/html/multipage/syscalls.html#sendrecv
 ******************************************************/
+#ifndef SERVER_SIDE_H
+#define SERVER_SIDE_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,14 +21,14 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <signal.h>
-#include "../include/encryption_decryption.h"
-#include "../include/helpers.h"
+#include "../inc/encryption_decryption.h"
+#include "../inc/helpers.h"
 
 #define MAX_BUFFER 128000
 #define MAX_PACKET 8000
 #define MAX_NAME 50
 
-typedef enum{ENCODE=0, DECODE}CONNECTION;
+typedef enum{ENC=0, DEC}CONNECTION;
 
 /*Session data structure*/
 typedef struct session session;
@@ -87,3 +90,4 @@ int confirmACK(const char *msg);
 
 void encode(struct childSession *thisChild);
 void decode(struct childSession *thisChild);
+#endif

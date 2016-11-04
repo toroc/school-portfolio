@@ -1,4 +1,4 @@
-#include "../include/client_side.h"
+#include "../inc/client_side.h"
 
 /******************************************************
 #   Data Structure Functions
@@ -245,9 +245,9 @@ void sendHandShake(struct session *thisSession)
 	/*clear buffer*/
 	bzero(buff, MAX_NAME);
 
-	char *msg ="ENC";
+	char *msg ="encode";
 	if (thisSession->request == DEC){
-		*msg = "DEC";
+		msg = "decode";
 	}
 
 
@@ -352,23 +352,6 @@ void sendAck(struct session *thisSession)
 	if (result <0){
 		error("Error: unable to send to socket\n");
 	}
-}
-
-/******************************************************
-#   confirmACK
-#   @desc: confirm buff has an ACK msg
-#   @param: const char *buff
-#   @return: 0: false, 1:true
-******************************************************/
-int confirmACK(const char *buff)
-{
-	char *success = "ACK";
-	int len = strlen(success);
-
-	if(strncmp(buff, success, len)==0){
-		return 1;
-	}
-	return 0;
 }
 
 /******************************************************

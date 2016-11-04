@@ -15,8 +15,8 @@
 #		http://beej.us/guide/bgnet/output/html/multipage/syscalls.html#sendrecv
 ******************************************************/
 
-#include "../include/server_side.h"
-#include "../include/helpers.h"
+#include "../inc/server_side.h"
+#include "../inc/helpers.h"
 
 
 /*Validation Function*/

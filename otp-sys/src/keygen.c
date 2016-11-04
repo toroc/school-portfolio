@@ -11,7 +11,7 @@
 #
 ******************************************************/
 
-#include "../include/keygen.h"
+#include "../inc/keygen.h"
 int main(int argc, char*argv[])
 {
 
