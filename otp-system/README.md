@@ -18,7 +18,13 @@ make clean
 ```
 To build the server side of the system run make at the command line in the current directory.
 
-This will generate an executabled called `ftserver`.
+This will generate 5 executables:
+keygen_app
+client_encrypt_app
+server_encrypt_app
+client_decrypt_app
+server_decrypt_app
+
 
 ###How to generate random keys
 
