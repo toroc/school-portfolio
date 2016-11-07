@@ -130,13 +130,21 @@ void handleRequest(struct session *thisSession)
 	/*Take care of handshake*/
 	sendHandShake(thisSession);
 
-	/*Send plain file first*/
-	do {
-		sendData(thisSession, thisSession->cipherText);
+	
+	if (thisSession->request == ENC){
+		/*Send plain file first*/
+		do {
+			sendData(thisSession, thisSession->plainText);
+		}
+		while(thisSession->plainText->confirm == 0);
 	}
-	while(thisSession->cipherText->confirm == 0);
+	else{
 
-		
+		do {
+			sendData(thisSession, thisSession->cipherText);
+		}while(thisSession->cipherText->confirm == 0);
+	}
+	
 	/*Send key file*/
 	do{
 		sendData(thisSession, thisSession->keyText);
@@ -149,6 +157,11 @@ void handleRequest(struct session *thisSession)
 
 	/*Print response*/
 	printf("%s\n",thisSession->plainText->textBuffer);
+
+	/*Close the socket*/ 
+	/*Close socket*/
+	// close(thisSession->socketFD);
+
 }
 
 /******************************************************
@@ -369,6 +382,7 @@ void fileCharValidation(struct textStruct *thisText)
 	int charCount=0;
 	int result;
 
+	// printf(thisText->fileName);
 	/*open file for read*/
 	fileFD=fopen(thisText->fileName,"r");
 
@@ -445,24 +459,46 @@ void validateFiles(struct session *thisSession)
 {
 
 	/*Validate for bad characters*/
-	fileCharValidation(thisSession->cipherText);
 	fileCharValidation(thisSession->keyText);
 
 	/*exit with error if files have invalid chars*/
-	if(thisSession->cipherText->validChars == INVALID){
-		fprintf(stderr,"Error: invalid characters in file \'%s\'\n", thisSession->cipherText->fileName);
-		exit(1);
-	}
-
 	if(thisSession->keyText->validChars == INVALID){
 		fprintf(stderr, "Error: invalid characters in file \'%s\'\n", thisSession->keyText->fileName);
 		exit(1);
 	}
 
-	/*exit with error: if keyText is shorter than plain file*/
-	if(thisSession->cipherText->charCount > thisSession->keyText->charCount){
-		fprintf(stderr, "Error: key \'%s\' is too short\n", thisSession->keyText->fileName);
-		exit(1);
+
+	if (thisSession->request == ENC){
+
+		fileCharValidation(thisSession->plainText);
+
+		/*exit with error if file has invalid chars*/
+		if(thisSession->plainText->validChars == INVALID){
+			fprintf(stderr,"Error: invalid characters in file \'%s\'\n", thisSession->plainText->fileName);
+			exit(1);
+		}
+
+		/*exit with error: if keyText is shorter than plain file*/
+		if(thisSession->plainText->charCount > thisSession->keyText->charCount){
+			fprintf(stderr, "Error: key \'%s\' is too short\n", thisSession->keyText->fileName);
+			exit(1);
+		}
+	}
+	else{
+		fileCharValidation(thisSession->cipherText);
+		/*exit with error if file has invalid chars*/
+		if(thisSession->cipherText->validChars == INVALID){
+			fprintf(stderr,"Error: invalid characters in file \'%s\'\n", thisSession->cipherText->fileName);
+			exit(1);
+		}
+
+		/*exit with error: if keyText is shorter than cipherText file*/
+		if(thisSession->cipherText->charCount > thisSession->keyText->charCount){
+			fprintf(stderr, "Error: key \'%s\' is too short\n", thisSession->keyText->fileName);
+			exit(1);
+		}
+
+
 	}
 
 

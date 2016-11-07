@@ -42,11 +42,11 @@ int main(int argc, char *argv[])
 	startServer(curSession);
 
 	/**/
-
-	/*Handle connections*/
-	handleConnections(curSession);
-
-
+	while(1){
+		/*Handle connections*/
+		handleConnections(curSession);
+	}
+	
 	return 0;
 
 

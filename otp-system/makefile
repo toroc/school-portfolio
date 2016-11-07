@@ -1,18 +1,21 @@
 VPATH 	= src inc lib
-CPPFLAGS = -I include
+CPPFLAGS = -I include -Wall
+
 new: clean all
 
 clean: 
 	rm -rf *.o */*.o *_app *.a
 all: examples
 
-examples: client_encrypt_app client_decrypt_app server_encrypt_app server_decrypt_app
+examples: client_encrypt_app client_decrypt_app server_encrypt_app server_decrypt_app keygen_app
 
 client_encrypt_app: libclient.a
 client_decrypt_app: libclient.a
 
 server_encrypt_app: libserver.a
 server_decrypt_app: libserver.a
+
+keygen_app: keygen_app.o
 
 #############################
 # Create Client Library
@@ -58,6 +61,8 @@ client_decrypt_app.o: client_side.h helpers.h
 
 server_encrypt_app.o: server_side.h helpers.h
 server_decrypt_app.o: server_side.h helpers.h 
+
+keygen_app.o: keygen.h
 
 
 client_side.o: client_side.h helpers.h encryption_decryption.h

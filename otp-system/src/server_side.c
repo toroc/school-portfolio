@@ -142,8 +142,8 @@ void startServer(struct session *thisSession)
 	}
 }
 /******************************************************
-#   fnName
-#   @desc: 
+#   acceptConnection
+#   @desc: accept incoming socket connection
 #   @param: pointer to session data structure object
 #   @return: void
 ******************************************************/
@@ -157,10 +157,10 @@ void acceptConnection(struct session *thisSession)
 
 
 	/*Accept incoming connection*/
-	thisSession->socketFD = accept(thisSession->serverSocket, (struct sockaddr*) &clientAddr,&clientLength);
+	thisSession->childSocket = accept(thisSession->serverSocket, (struct sockaddr*) &clientAddr,&clientLength);
 
 	/*Ensure it worked*/
-	if(thisSession->socketFD < 0){
+	if(thisSession->childSocket < 0){
 		error("Error: unable to accept connection.\n");
 	}
 	else{
@@ -192,12 +192,14 @@ void handleConnections(struct session *thisSession)
 		socklen_t clientLength = sizeof(thisSession->clientAddr);
 
 		/*Wait for connection*/
-		thisSession->socketFD = accept(thisSession->serverSocket, (struct sockaddr*) &thisSession->clientAddr, &clientLength);
+		thisSession->childSocket = accept(thisSession->serverSocket, (struct sockaddr*) &thisSession->clientAddr, &clientLength);
 
 		/*Ensure it worked*/
-		if (thisSession->socketFD<0)
+		if (thisSession->childSocket == -1)
 		{
-			error("Error: unable to accept connection.\n");
+			error("Error: unable to accept connection. 200\n");
+			close(thisSession->childSocket);
+			exit(1);
 		}
 
 		pid_t childPID;
@@ -208,12 +210,14 @@ void handleConnections(struct session *thisSession)
 		/*Check for error*/
 		if(childPID < 0){
 			/*Close socket*/
-			close(thisSession->socketFD);
+			close(thisSession->childSocket);
+			// thisSession->childSocket = -1;
 			error("Error: unable to fork new process.\n");
 
 		}
 		/*Inside child*/
-		if(childPID ==0){
+		if(childPID == 0){
+			
 			/*close the old server socket that is bound to main port*/
 			close(thisSession->serverSocket);
 
@@ -225,11 +229,18 @@ void handleConnections(struct session *thisSession)
 			/*free data*/
 			freeChildSession(thisChild);
 
+			//
+			// close(thisSession->childSocket);
+
+			exit(0);
+
+
 		}
 		else{
 			/*back to parent*/
 			/*Close  socket used by child*/
-			close(thisSession->socketFD);
+			close(thisSession->childSocket);
+			// thisSession->childSocket = -1;
 
 			int status;
 			/*Wait for all child process to end*/
@@ -255,24 +266,42 @@ void handleChildProcess(struct session *thisSession, struct childSession *thisCh
 	/*Confirm Handshake*/
 	receiveHandShake(thisSession);
 
-	/*Get plain data*/
-	getData(thisSession, thisChild->cipherText);
-
-	/*Get key data*/
-	getData(thisSession, thisChild->keyText);
 
 	if (thisSession->connType == DEC){
+
+		/*Get plain data*/
+		getData(thisSession, thisChild->cipherText);
+
+	}
+	else{
+
+		/*Get data to encode*/
+		getData(thisSession, thisChild->plainText);
+		
+	}
+	
+	/*Get key data*/
+	getData(thisSession, thisChild->keyText);	
+
+	if (thisSession->connType == DEC){
+
 		/*decode message*/
 		decode(thisChild);
+		/*Send message*/
+		sendData(thisSession, thisChild->plainText);
+
 	}
 	else{
 		/*encode message*/
 		encode(thisChild);
-	}
-	
+		sendData(thisSession, thisChild->cipherText);
 
-	/*Send message*/
-	sendData(thisSession, thisChild->plainText);
+	}
+
+	// close connection
+	/*Close  socket used by child*/
+	// close(thisSession->childSocket);
+	
 
 }
 
@@ -292,7 +321,7 @@ void sendAck(struct session *thisSession)
 
 
 	/*Send ACK*/
-	result = send(thisSession->socketFD, msg, sizeof(msg) , 0);
+	result = send(thisSession->childSocket, msg, sizeof(msg) , 0);
 
 	if (result <0){
 		error("Error: unable to send to socket\n");
@@ -311,7 +340,7 @@ void sendNACK(struct session *thisSession)
 	char *msg = "NACK";
 
 	/*Send ACK*/
-	result = send(thisSession->socketFD, msg, sizeof(msg) , 0);
+	result = send(thisSession->childSocket, msg, sizeof(msg) , 0);
 
 	if (result <0){
 		error("Error: unable to send to socket\n");
@@ -337,7 +366,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 	bzero(buffer, MAX_PACKET);
 
 	/*# of bytes to expect for text*/
-	bytesRead = recv(thisSession->socketFD, (char*)&msgLen, sizeof(msgLen),0);
+	bytesRead = recv(thisSession->childSocket, (char*)&msgLen, sizeof(msgLen),0);
 
 
 	/*Ensure it was received*/
@@ -353,7 +382,7 @@ void getData(struct session *thisSession, struct textStruct *thisText)
 
 	/*Get data*/
 	while(bytesRead< msgLen){
-		bytesRead+=recv(thisSession->socketFD, thisText->textBuffer, MAX_BUFFER,0);
+		bytesRead+=recv(thisSession->childSocket, thisText->textBuffer, MAX_BUFFER,0);
 	}
 	
 
@@ -381,9 +410,12 @@ void receiveHandShake(struct session *thisSession)
 	bzero(buff, MAX_NAME);
 
 	char *success = "decode";
+	if (thisSession->connType == ENC){
+		success = "encode";
+	}
 	int len = strlen(success);
 
-	int bytesRead = recv(thisSession->socketFD, buff, sizeof(buff), 0);
+	int bytesRead = recv(thisSession->childSocket, buff, sizeof(buff), 0);
 
 
 	if (bytesRead < 0){
@@ -397,7 +429,7 @@ void receiveHandShake(struct session *thisSession)
 	else{
 		sendNACK(thisSession);
 		/*Close socket*/
-		close(thisSession->socketFD);
+		close(thisSession->childSocket);
 
 		/*Exit child*/
 		_exit(0);
@@ -431,7 +463,7 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 	textSize = htonl(textSize);
 
 	/*Send number of bytes to expect*/
-	bytesSent = send(thisSession->socketFD, &textSize, sizeof(textSize),0);
+	bytesSent = send(thisSession->childSocket, &textSize, sizeof(textSize),0);
 
 	/*Ensure message sent*/
 	if(bytesSent <0){
@@ -439,7 +471,7 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 	}
 
 	/*Wait for ACK*/
-	result = recv(thisSession->socketFD, buffer, sizeof(buffer),0);
+	result = recv(thisSession->childSocket, buffer, sizeof(buffer),0);
 
 	/*Confirm ACK*/
 	if(confirmACK(buffer)==0)
@@ -454,7 +486,7 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 	do
 	{
 		/*Send MAX PACKET at a time*/
-		bytesSent+=send(thisSession->socketFD, thisText->textBuffer, MAX_PACKET, 0);
+		bytesSent+=send(thisSession->childSocket, thisText->textBuffer, MAX_PACKET, 0);
 
 	}while(bytesSent < textSize);
 
@@ -463,7 +495,7 @@ void sendData(struct session *thisSession, struct textStruct *thisText)
 	bzero(buffer, MAX_PACKET);
 
 	/*Wait for received message*/
-	result = recv(thisSession->socketFD, buffer, sizeof(buffer), 0);
+	result = recv(thisSession->childSocket, buffer, sizeof(buffer), 0);
 
 	if(confirmACK(buffer)==0)
 	{
@@ -542,5 +574,5 @@ void decode(struct childSession *thisChild)
 		thisChild->plainText->textBuffer[i] = ciphChar;
 	}
 
-	/*Done encoding*/
+	/*Done decoding*/
 }

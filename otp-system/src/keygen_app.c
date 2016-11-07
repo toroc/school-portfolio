@@ -16,11 +16,16 @@ int main(int argc, char*argv[])
 {
 
 	checkCommandLine(argc, argv);
+
 	/*Store length*/
 	int keyLen = atoi(argv[1]);
+	// printf("Keylen is %d", keyLen);
+
+	time_t currentTime;
+	currentTime = time(NULL);
 
 	/*Seed for rand*/
-	srand(time(NULL));
+	srand((unsigned)currentTime);
 
 	/*Generate key*/
 	generateKey(keyLen);
@@ -57,19 +62,22 @@ void generateKey(int keyLen){
 
 	char alphabet[OP_NUM]="ABCDEFGH IJKLMNOPQRSTUVWXYZ";
 	/*String to store generated key*/
-	char keyString[keyLen+1];
+	char *keyString = (char*)malloc(sizeof(char)*keyLen + 1);
 	char curChar;
 	int randIndex;
 	int i=0;
 
 	/*Loop through*/
 	while(i < keyLen){
+		// printf("%d",i);
 		/*Get a random index from 0-27*/
 		randIndex = rand() % 27;
 		/*Set the curChar to char at randIndex*/
 		curChar = alphabet[randIndex];
 		/*Set the curChar to index of keyString and increment i*/
 		keyString[i++]=curChar;
+		// i += 1;
+		// printf("%s\n", keyString);
 	}
 
 	/*Append null char*/
@@ -77,4 +85,6 @@ void generateKey(int keyLen){
 
 	/*Print to console */
 	fprintf(stdout, "%s\n", keyString);
+
+	
 }

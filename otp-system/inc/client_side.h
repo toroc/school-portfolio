@@ -50,6 +50,7 @@ struct session{
 	int serverPort; /*int to store server port*/
 	
 	int socketFD; /*client socket endpoint file descriptor*/
+	int newSocketFD;
 	struct sockaddr_in serverAddr;
 	struct hostent *serverIP;
 	RTYPE request; /*0: encode, 1: decode*/

@@ -45,13 +45,18 @@ struct childSession{
 	struct textStruct *plainText;
 	struct textStruct *keyText;
 	struct textStruct *cipherText;
+	// Added based on otp_enc_d
+	char *childPort;
+	int clientSocketFD;
+	int newChildSocketFD;
+
 
 };
 
 struct session{
 	int serverSocket; /*Server socket for listening*/
 	int serverPort; /*int to store server port*/
-	int socketFD; /*client socket for connection*/
+	int childSocket; /*client socket for connection*/
 	int newsocketFD;
 	struct sockaddr_in serverAddr;
 	struct sockaddr_in clientAddr;
