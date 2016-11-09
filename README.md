@@ -23,3 +23,10 @@ A Node App featuring a how to guide for the Foursquare API.
 **
 A series of programs that can encrypt and decrypt text similar to using a one-time password system
 [Read more...](otp-system/)
+
+
+---
+### Workout Web App
+**
+A Node App featuring a workout tracker using a mysql backend and supporting CRUD operations.
+[Read more...](workout-web-app/)
