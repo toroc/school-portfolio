@@ -3,7 +3,7 @@
 // toroc@oregonstate.edu
 // Winter 2016
 // Assignment: Database Interactions & UI
-// Filename: workouts.js
+// Filename: server.js
 // URL: http://52.33.44.25:3001/public/html/workouts.html
 //
 /*Server side database*/
