@@ -8,7 +8,7 @@ clean:
 
 all: examples
 
-examples: game_no_limit
+examples: Game_No_Limit
 
 main: libgame.a
 

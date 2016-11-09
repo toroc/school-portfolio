@@ -1,5 +1,10 @@
 # school-porfolio
 
+---
+### Console Text Game
+**
+This is a console-based adventure game written in C++.
+[Read more...](console-game/)
 
 ---
 ### File Transfer System
