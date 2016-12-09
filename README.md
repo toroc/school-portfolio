@@ -16,7 +16,7 @@ This is a simple one-way file transfer system written for a Networking Course.
 ### Foursquare How To
 **
 A Node App featuring a how to guide for the Foursquare API.
-[Read more...](foursqaure-how-to/)
+[Read more...](foursquare-how-to/)
 
 ---
 ### OTP System
